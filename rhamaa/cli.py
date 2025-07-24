@@ -73,7 +73,7 @@ def show_logo_and_help():
         table.add_row(f"rhamaa {cmd}", desc)
     console.print(Panel(HELP_PANEL_TEXT, style="bold yellow", box=box.ROUNDED, expand=False))
     console.print(table)
-    console.print("[dim]Docs: https://github.com/rhamaa/RhamaaCLI | Made with [bold magenta]Rich[/bold magenta][/dim]", justify="center")
+    console.print("[dim]Docs: https://github.com/RhamaaCMS/RhamaaCLI | Made with [bold magenta]Rich[/bold magenta][/dim]", justify="center")
 
 main.add_command(start)
 main.add_command(add)
