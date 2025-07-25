@@ -10,7 +10,9 @@ setup(
     install_requires=[
         "click",
         "rich",
-        "wagtail"
+        "wagtail",
+        "requests",
+        "gitpython"
     ],
     entry_points={
         "console_scripts": [
