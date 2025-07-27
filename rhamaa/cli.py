@@ -8,6 +8,7 @@ from rich.table import Table
 from rhamaa.commands.start import start
 from rhamaa.commands.add import add
 from rhamaa.commands.registry import registry
+from rhamaa.commands.startapp import startapp
 
 console = Console()
 
@@ -45,6 +46,7 @@ ASCII_LOGO = '''\
 
 HELP_COMMANDS = [
     ("start <ProjectName>", "[green]Create a new Wagtail project[/green]"),
+    ("startapp <AppName>", "[yellow]Create a new Django app with RhamaaCMS structure[/yellow]"),
     ("add <AppName>", "[cyan]Add a prebuilt app (users, article, LMS, IoT, etc)[/cyan]"),
     ("registry list", "[blue]List all available apps in registry[/blue]"),
     ("help", "[magenta]Show this help message[/magenta]")
@@ -78,5 +80,6 @@ def show_logo_and_help():
     console.print("[dim]Docs: https://github.com/RhamaaCMS/RhamaaCLI | Made with [bold magenta]Rich[/bold magenta][/dim]", justify="center")
 
 main.add_command(start)
+main.add_command(startapp)
 main.add_command(add)
 main.add_command(registry)
