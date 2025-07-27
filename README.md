@@ -32,6 +32,15 @@ A powerful CLI tool to accelerate Wagtail web development with prebuilt applicat
 
 ## 🛠 Installation
 
+### From PyPI (Beta)
+```bash
+# Install the latest beta version
+pip install rhamaa==0.1.0b1
+
+# Or install the latest pre-release
+pip install --pre rhamaa
+```
+
 ### Development Setup
 ```bash
 # Clone the repository
@@ -45,11 +54,6 @@ source .venv/bin/activate  # Linux/Mac
 
 # Install in development mode
 pip install -e .
-```
-
-### From PyPI (Coming Soon)
-```bash
-pip install rhamaa
 ```
 
 ## 📖 Usage

@@ -17,4 +17,17 @@ node_modules/
 coverage
 .python-version
 .vim
-/rhamaa.egg-info
+
+# Build and distribution
+/build/
+/dist/
+*.egg-info/
+.eggs/
+
+# PyPI
+.pypirc
+twine.log
+
+# Project specific
+apps/
+test_project/
