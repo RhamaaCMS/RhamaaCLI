@@ -189,29 +189,32 @@ def example_view(request):
 def create_admin_py(app_dir, app_name):
     """Create admin.py with Wagtail integration."""
     content = '''from django.contrib import admin
-from wagtail.contrib.modeladmin.options import ModelAdmin, modeladmin_register
+from wagtail.admin.panels import FieldPanel, TabbedInterface, ObjectList
+from wagtail.snippets.models import register_snippet
 
 from .models import ExamplePage
 
 
 # Register your models here.
 
-@admin.register(ExamplePage)
-class ExamplePageAdmin(admin.ModelAdmin):
-    list_display = ['title', 'live', 'first_published_at']
-    list_filter = ['live', 'first_published_at']
-    search_fields = ['title', 'introduction']
+# For Page models, use Wagtail's admin interface (no registration needed)
+# Pages are automatically available in Wagtail admin
 
+# For non-page models, use snippets or Django admin
+# Example snippet registration:
+# @register_snippet
+# class YourModelAdmin:
+#     model = YourModel
+#     menu_label = 'Your Models'
+#     menu_icon = 'snippet'
+#     list_display = ['title', 'created_at']
+#     search_fields = ['title']
 
-# Wagtail ModelAdmin (optional - for non-page models)
-# class ExampleModelAdmin(ModelAdmin):
-#     model = ExamplePage
-#     menu_label = 'Example Pages'
-#     menu_icon = 'doc-full'
-#     list_display = ('title', 'live', 'first_published_at')
-#     search_fields = ('title', 'introduction')
-
-# modeladmin_register(ExampleModelAdmin)
+# Example Django admin registration:
+# @admin.register(YourModel)
+# class YourModelAdmin(admin.ModelAdmin):
+#     list_display = ['title', 'created_at']
+#     search_fields = ['title']
 '''
 
     (app_dir / 'admin.py').write_text(content)
