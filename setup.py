@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="rhamaa",
-    version="0.1.0b2",  # Beta version
+    version="0.1.0b4",  # Beta version with template system
     description="CLI tools to accelerate Wagtail web development with RhamaaCMS.",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -40,6 +40,7 @@ setup(
         "rich>=12.0.0",
         "requests>=2.25.0",
         "gitpython>=3.1.0",
+        "wagtail>=5.0.0",  # Add Wagtail as core dependency
     ],
     extras_require={
         "dev": [
