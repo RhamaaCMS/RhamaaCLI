@@ -1,0 +1,275 @@
+# Changelog
+
+All notable changes to Rhamaa CLI will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Planned Features
+- Remote registry support
+- App update management
+- Custom registry sources
+- Version management for apps
+- Dependency resolution
+- Configuration templates
+
+## [0.1.0b1] - 2024-01-15
+
+### Added
+- Initial beta release of Rhamaa CLI
+- Project creation with `rhamaa start` command
+- App installation with `rhamaa add` command
+- Registry management with `rhamaa registry` commands
+- Built-in app registry with 4 prebuilt applications
+- Rich terminal UI with ASCII art branding
+- Progress indicators for downloads and installations
+- Force installation option with `--force` flag
+- Comprehensive error handling and validation
+- Project detection and validation
+- GitHub repository integration for app downloads
+
+### Applications Added
+- **mqtt**: IoT MQTT integration for Wagtail
+- **users**: Advanced user management system
+- **articles**: Blog and article management system
+- **lms**: Complete Learning Management System
+
+### Commands Added
+- `rhamaa start <ProjectName>`: Create new Wagtail project
+- `rhamaa add <AppName>`: Install prebuilt applications
+- `rhamaa add --list`: List available applications
+- `rhamaa registry list`: Display registry contents by category
+- `rhamaa registry info <AppName>`: Show detailed app information
+- `rhamaa help`: Display help information with logo
+
+### Features
+- **Project Management**: Create Wagtail projects using RhamaaCMS template
+- **App Installation**: Download and install apps from GitHub repositories
+- **Registry System**: Centralized catalog of available applications
+- **Progress Tracking**: Real-time download and installation progress
+- **Error Handling**: Comprehensive error messages and troubleshooting
+- **Project Validation**: Automatic detection of Wagtail projects
+- **Force Installation**: Overwrite existing apps when needed
+- **Rich UI**: Beautiful ASCII art branding and colored output
+
+### Technical Details
+- **Python Support**: Python 3.7+
+- **Dependencies**: Click, Rich, Requests, GitPython
+- **Package Structure**: Modular command architecture
+- **Distribution**: Available on PyPI as beta release
+- **License**: MIT License
+
+### Documentation
+- Complete documentation with MkDocs Material
+- Installation and quick start guides
+- Command reference and examples
+- App catalog with detailed descriptions
+- Troubleshooting and FAQ sections
+- Contributing guidelines for developers
+
+## [0.0.1] - 2024-01-01
+
+### Added
+- Initial project structure
+- Basic CLI framework with Click
+- Rich console integration
+- Project scaffolding setup
+
+---
+
+## Release Notes
+
+### Version 0.1.0b1 - Beta Release
+
+This is the first beta release of Rhamaa CLI, introducing the core functionality for accelerating Wagtail development.
+
+#### Key Features
+
+**Project Creation**
+- Create new Wagtail projects with a single command
+- Uses the proven RhamaaCMS template
+- Automatic project structure setup
+
+**App Ecosystem**
+- 4 prebuilt applications ready for installation
+- Covers IoT, authentication, content management, and education
+- Easy installation with automatic GitHub integration
+
+**Developer Experience**
+- Beautiful terminal interface with Rich library
+- Real-time progress indicators
+- Comprehensive error handling
+- Intuitive command structure
+
+#### Available Applications
+
+1. **MQTT Apps** (`mqtt`)
+   - IoT device integration
+   - Real-time messaging
+   - Dashboard and monitoring
+
+2. **User Management** (`users`)
+   - Advanced authentication
+   - User profiles and permissions
+   - Social login integration
+
+3. **Article System** (`articles`)
+   - Blog and content management
+   - SEO optimization
+   - Comment system
+
+4. **Learning Management System** (`lms`)
+   - Course creation and management
+   - Student enrollment
+   - Assessment tools
+
+#### Installation
+
+```bash
+pip install rhamaa==0.1.0b1
+```
+
+#### Basic Usage
+
+```bash
+# Create a new project
+rhamaa start MyProject
+
+# Add applications
+rhamaa add mqtt
+rhamaa add users
+
+# Explore the registry
+rhamaa registry list
+```
+
+#### Known Issues
+
+- Registry updates require CLI updates
+- No automatic app update mechanism
+- Limited to GitHub-hosted applications
+- No dependency resolution between apps
+
+#### Feedback
+
+This is a beta release. Please report issues and provide feedback on our [GitHub repository](https://github.com/RhamaaCMS/RhamaaCLI/issues).
+
+---
+
+## Upgrade Guide
+
+### From 0.0.1 to 0.1.0b1
+
+This is a major update with breaking changes:
+
+1. **Install New Version**
+   ```bash
+   pip install --upgrade rhamaa
+   ```
+
+2. **New Commands Available**
+   - All previous functionality has been redesigned
+   - Use `rhamaa --help` to see new command structure
+
+3. **Project Structure Changes**
+   - Apps are now installed in `apps/` directory
+   - Follow new installation procedures
+
+### Future Upgrades
+
+We'll provide detailed upgrade guides for future releases, including:
+
+- Migration scripts for breaking changes
+- Compatibility information
+- Feature deprecation notices
+
+---
+
+## Contributing to Changelog
+
+When contributing to Rhamaa CLI, please update this changelog:
+
+### Format
+
+```markdown
+## [Version] - YYYY-MM-DD
+
+### Added
+- New features
+
+### Changed
+- Changes in existing functionality
+
+### Deprecated
+- Soon-to-be removed features
+
+### Removed
+- Removed features
+
+### Fixed
+- Bug fixes
+
+### Security
+- Security improvements
+```
+
+### Categories
+
+- **Added**: New features
+- **Changed**: Changes in existing functionality
+- **Deprecated**: Soon-to-be removed features
+- **Removed**: Removed features
+- **Fixed**: Bug fixes
+- **Security**: Security improvements
+
+### Guidelines
+
+1. **Keep entries concise** but descriptive
+2. **Group similar changes** together
+3. **Use present tense** ("Add feature" not "Added feature")
+4. **Include issue/PR numbers** when relevant
+5. **Highlight breaking changes** clearly
+
+---
+
+## Release Schedule
+
+### Current Release Cycle
+
+- **Beta Releases**: Monthly during development
+- **Stable Releases**: Quarterly
+- **Patch Releases**: As needed for critical fixes
+
+### Upcoming Releases
+
+#### 0.2.0 (Planned - Q2 2024)
+- Remote registry support
+- App update management
+- Enhanced error handling
+- Performance improvements
+
+#### 0.3.0 (Planned - Q3 2024)
+- Custom registry sources
+- Dependency resolution
+- Configuration templates
+- Plugin system
+
+#### 1.0.0 (Planned - Q4 2024)
+- Stable API
+- Complete feature set
+- Production-ready
+- Long-term support
+
+---
+
+## Support
+
+For questions about releases or changelog:
+
+- **GitHub Issues**: Bug reports and feature requests
+- **GitHub Discussions**: General questions and feedback
+- **Documentation**: Detailed guides and references
+
+Stay updated with Rhamaa CLI development by watching our [GitHub repository](https://github.com/RhamaaCMS/RhamaaCLI)!
