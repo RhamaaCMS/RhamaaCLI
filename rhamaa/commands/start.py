@@ -9,7 +9,7 @@ console = Console()
 @click.argument('project_name')
 def start(project_name):
     """Create a new Wagtail project using the RhamaaCMS template."""
-    template_url = "https://github.com/RhamaaCMS/RhamaaCMS/archive/refs/heads/main.zip"
+    template_url = "https://github.com/RhamaaCMS/RhamaaCMS/archive/refs/heads/base.zip"
     cmd = [
         "wagtail", "start",
         f"--template={template_url}",
