@@ -49,7 +49,7 @@ pip install -r requirements.txt
 Lihat aplikasi pre-built apa saja yang tersedia:
 
 ```bash
-rhamaa add --list
+rhamaa startapp --list
 ```
 
 Anda akan melihat tabel yang menampilkan aplikasi yang tersedia seperti:
@@ -64,13 +64,13 @@ Anda akan melihat tabel yang menampilkan aplikasi yang tersedia seperti:
 Mari tambahkan aplikasi articles untuk fungsionalitas blog:
 
 ```bash
-rhamaa add articles
+rhamaa startapp articles --prebuild articles
 ```
 
 Ini akan:
 
 - Download aplikasi articles dari GitHub
-- Extract ke direktori `apps/` Anda
+- Extract ke direktori `apps/` Anda (apps/articles)
 - Menampilkan langkah selanjutnya untuk konfigurasi
 
 ## Langkah 6: Konfigurasi Aplikasi
@@ -83,7 +83,7 @@ Ikuti instruksi yang ditampilkan setelah instalasi:
 # settings/base.py atau settings.py
 INSTALLED_APPS = [
     # ... aplikasi yang sudah ada
-    'articles',  # Tambahkan baris ini
+    'apps.articles',  # Cocok dengan apps/<nama>
 ]
 ```
 
@@ -116,13 +116,13 @@ Jelajahi aplikasi lain yang tersedia:
 
 ```bash
 # Tambahkan manajemen user
-rhamaa add users
+rhamaa startapp users --prebuild users
 
 # Tambahkan kemampuan IoT
-rhamaa add mqtt
+rhamaa startapp iot --prebuild mqtt
 
 # Tambahkan fungsionalitas LMS
-rhamaa add lms
+rhamaa startapp lms --prebuild lms
 ```
 
 ### Dapatkan Informasi Aplikasi
@@ -130,19 +130,16 @@ rhamaa add lms
 Pelajari lebih lanjut tentang aplikasi sebelum menginstall:
 
 ```bash
-rhamaa registry info mqtt
+rhamaa startapp --list
+# Lalu buka repo app yang ditampilkan untuk detailnya
 ```
 
 ### Perintah Registry
 
-Jelajahi registry aplikasi:
+Grup perintah `registry` berdiri sendiri sudah deprecated. Gunakan:
 
 ```bash
-# List semua aplikasi berdasarkan kategori
-rhamaa registry list
-
-# Dapatkan informasi detail aplikasi
-rhamaa registry info <nama_aplikasi>
+rhamaa startapp --list
 ```
 
 ## Workflow Umum
@@ -152,7 +149,7 @@ rhamaa registry info <nama_aplikasi>
 ```bash
 rhamaa start BlogSaya
 cd BlogSaya
-rhamaa add articles
+rhamaa startapp articles --prebuild articles
 # Konfigurasi dan jalankan migrasi
 ```
 
@@ -161,8 +158,8 @@ rhamaa add articles
 ```bash
 rhamaa start DashboardIoT
 cd DashboardIoT
-rhamaa add mqtt
-rhamaa add users
+rhamaa startapp iot --prebuild mqtt
+rhamaa startapp users --prebuild users
 # Konfigurasi pengaturan MQTT dan jalankan migrasi
 ```
 
@@ -171,8 +168,8 @@ rhamaa add users
 ```bash
 rhamaa start PlatformEdu
 cd PlatformEdu
-rhamaa add lms
-rhamaa add users
+rhamaa startapp lms --prebuild lms
+rhamaa startapp users --prebuild users
 # Konfigurasi pengaturan LMS dan jalankan migrasi
 ```
 
@@ -182,9 +179,9 @@ rhamaa add users
     Rhamaa CLI membuat aplikasi di direktori `apps/`. Ini menjaga proyek Anda tetap terorganisir dan mengikuti best practices Django.
 
 !!! tip "Instalasi Paksa"
-    Jika Anda perlu menginstall ulang aplikasi, gunakan flag `--force`:
+    Jika Anda perlu menginstall ulang aplikasi prebuilt ke folder yang sama, gunakan flag `--force`:
     ```bash
-    rhamaa add articles --force
+    rhamaa startapp articles --prebuild articles --force
     ```
 
 !!! tip "Cek Tipe Proyek"
@@ -194,10 +191,10 @@ rhamaa add users
 
 ### Aplikasi Sudah Ada
 
-Jika Anda melihat "App already exists", gunakan flag `--force` untuk menimpa:
+Jika Anda melihat "App already exists" saat instalasi prebuilt, gunakan flag `--force` untuk menimpa:
 
 ```bash
-rhamaa add articles --force
+rhamaa startapp articles --prebuild articles --force
 ```
 
 ### Bukan Proyek Wagtail

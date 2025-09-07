@@ -1,45 +1,53 @@
 # App Management
 
-Rhamaa CLI's app management system allows you to easily add prebuilt applications to your Wagtail projects. This section covers all app-related commands and workflows.
+Rhamaa CLI lets you create new apps and install prebuilt apps directly via the `startapp` command.
 
-## Adding Applications
+## Creating a New App
 
-### `rhamaa add`
+### `rhamaa startapp <AppName>`
 
-Install prebuilt applications from the RhamaaCMS ecosystem.
+Create a new Django app scaffold.
 
 ```bash
-rhamaa add <app_name> [options]
+# Wagtail-oriented scaffold (default)
+rhamaa startapp blog --type wagtail
+
+# Minimal Django scaffold
+rhamaa startapp blog --type minimal
 ```
 
-#### Basic Usage
+## Installing Prebuilt Applications
+
+### `rhamaa startapp <AppName> --prebuild <key>`
+
+Install prebuilt applications from the RhamaaCMS registry into `apps/<AppName>`.
 
 ```bash
-# Install the MQTT app
-rhamaa add mqtt
+# Install the MQTT app into apps/iot
+rhamaa startapp iot --prebuild mqtt
 
-# Install the users app
-rhamaa add users
+# Install the users app into apps/users
+rhamaa startapp users --prebuild users
 
-# Install the articles app
-rhamaa add articles
+# Install the articles app into apps/articles
+rhamaa startapp articles --prebuild articles
 ```
 
 #### Options
 
 | Option | Description |
 |--------|-------------|
-| `--list`, `-l` | List all available apps |
-| `--force`, `-f` | Force install even if app already exists |
+| `--list` | List all available prebuilt apps |
+| `--force`, `-f` | Overwrite the target directory if it already exists |
 
 #### Examples
 
 ```bash
 # List available apps
-rhamaa add --list
+rhamaa startapp --list
 
-# Force reinstall an app
-rhamaa add mqtt --force
+# Force reinstall into target directory
+rhamaa startapp mqtt --prebuild mqtt --force
 ```
 
 ## Listing Available Apps
@@ -47,7 +55,7 @@ rhamaa add mqtt --force
 ### View All Apps
 
 ```bash
-rhamaa add --list
+rhamaa startapp --list
 ```
 
 This displays a formatted table showing:
@@ -178,7 +186,7 @@ Use the `--force` flag when you want to:
 ### Example
 
 ```bash
-rhamaa add mqtt --force
+rhamaa startapp mqtt --prebuild mqtt --force
 ```
 
 ### What Happens
@@ -210,7 +218,7 @@ Error: App 'myapp' not found in registry.
 Use 'rhamaa add --list' to see available apps.
 ```
 
-**Solution**: Check available apps with `rhamaa add --list` and use the correct app name.
+**Solution**: Check available apps with `rhamaa startapp --list` and use the correct app name.
 
 #### "App Already Exists"
 
@@ -259,8 +267,8 @@ Please check your internet connection and try again.
 ```bash
 rhamaa start MyBlog
 cd MyBlog
-rhamaa add articles
-rhamaa add users
+rhamaa startapp articles --prebuild articles
+rhamaa startapp users --prebuild users
 # Configure and run migrations
 ```
 
@@ -269,8 +277,8 @@ rhamaa add users
 ```bash
 rhamaa start IoTDashboard
 cd IoTDashboard
-rhamaa add mqtt
-rhamaa add users
+rhamaa startapp iot --prebuild mqtt
+rhamaa startapp users --prebuild users
 # Configure MQTT settings
 ```
 
@@ -279,9 +287,9 @@ rhamaa add users
 ```bash
 rhamaa start EduPlatform
 cd EduPlatform
-rhamaa add lms
-rhamaa add users
-rhamaa add articles
+rhamaa startapp lms --prebuild lms
+rhamaa startapp users --prebuild users
+rhamaa startapp articles --prebuild articles
 # Configure LMS settings
 ```
 

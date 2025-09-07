@@ -49,7 +49,7 @@ pip install -r requirements.txt
 See what prebuilt applications are available:
 
 ```bash
-rhamaa add --list
+rhamaa startapp --list
 ```
 
 You'll see a table showing available apps like:
@@ -64,13 +64,13 @@ You'll see a table showing available apps like:
 Let's add the articles app for blog functionality:
 
 ```bash
-rhamaa add articles
+rhamaa startapp articles --prebuild articles
 ```
 
 This will:
 
 - Download the articles app from GitHub
-- Extract it to your `apps/` directory
+- Extract it to your `apps/` directory (apps/articles)
 - Show you next steps for configuration
 
 ## Step 6: Configure the App
@@ -83,7 +83,7 @@ Follow the instructions shown after installation:
 # settings/base.py or settings.py
 INSTALLED_APPS = [
     # ... existing apps
-    'articles',  # Add this line
+    'apps.articles',  # Add this line (matches apps/<name>)
 ]
 ```
 
@@ -116,13 +116,13 @@ Explore other available apps:
 
 ```bash
 # Add user management
-rhamaa add users
+rhamaa startapp users --prebuild users
 
 # Add IoT capabilities
-rhamaa add mqtt
+rhamaa startapp iot --prebuild mqtt
 
 # Add LMS functionality
-rhamaa add lms
+rhamaa startapp lms --prebuild lms
 ```
 
 ### Get App Information
@@ -130,19 +130,16 @@ rhamaa add lms
 Learn more about any app before installing:
 
 ```bash
-rhamaa registry info mqtt
+rhamaa startapp --list
+# Then open the app repo linked in the table for details
 ```
 
 ### Registry Commands
 
-Explore the app registry:
+The standalone `registry` command group is deprecated. Use:
 
 ```bash
-# List all apps by category
-rhamaa registry list
-
-# Get detailed app information
-rhamaa registry info <app_name>
+rhamaa startapp --list
 ```
 
 ## Common Workflows
@@ -152,7 +149,7 @@ rhamaa registry info <app_name>
 ```bash
 rhamaa start MyBlog
 cd MyBlog
-rhamaa add articles
+rhamaa startapp articles --prebuild articles
 # Configure and run migrations
 ```
 
@@ -161,8 +158,8 @@ rhamaa add articles
 ```bash
 rhamaa start IoTDashboard
 cd IoTDashboard
-rhamaa add mqtt
-rhamaa add users
+rhamaa startapp iot --prebuild mqtt
+rhamaa startapp users --prebuild users
 # Configure MQTT settings and run migrations
 ```
 
@@ -171,8 +168,8 @@ rhamaa add users
 ```bash
 rhamaa start EduPlatform
 cd EduPlatform
-rhamaa add lms
-rhamaa add users
+rhamaa startapp lms --prebuild lms
+rhamaa startapp users --prebuild users
 # Configure LMS settings and run migrations
 ```
 
@@ -182,9 +179,9 @@ rhamaa add users
     Rhamaa CLI creates apps in the `apps/` directory. This keeps your project organized and follows Django best practices.
 
 !!! tip "Force Installation"
-    If you need to reinstall an app, use the `--force` flag:
+    If you need to reinstall a prebuilt app into the same folder, use the `--force` flag:
     ```bash
-    rhamaa add articles --force
+    rhamaa startapp articles --prebuild articles --force
     ```
 
 !!! tip "Check Project Type"
@@ -194,10 +191,10 @@ rhamaa add users
 
 ### App Already Exists
 
-If you see "App already exists", use the `--force` flag to overwrite:
+If you see "App already exists" during prebuilt installation, use the `--force` flag to overwrite:
 
 ```bash
-rhamaa add articles --force
+rhamaa startapp articles --prebuild articles --force
 ```
 
 ### Not a Wagtail Project

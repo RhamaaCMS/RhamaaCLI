@@ -1,17 +1,42 @@
 import click
 import os
 from pathlib import Path
+import pkgutil
+from importlib import resources
 from rich.console import Console
 from rich.panel import Panel
+from rich import box
+from rhamaa.registry import get_app_info, is_app_available
+from rhamaa.utils import download_github_repo, extract_repo_to_apps, check_wagtail_project
+from rich.table import Table
+from rich import box as rich_box
+from rhamaa.registry import list_available_apps
 
 console = Console()
 
 
 @click.command()
-@click.argument('app_name')
+@click.argument('app_name', required=False)
 @click.option('--path', '-p', default='apps', help='Directory to create the app in (default: apps)')
-def startapp(app_name, path):
+@click.option('--type', 'app_type', type=click.Choice(['wagtail', 'minimal']), default='wagtail', show_default=True, help='App template type')
+@click.option('--prebuild', type=str, default=None, help='Install a prebuilt app from registry (e.g. blog, users) into the given app_name directory')
+@click.option('--list', 'list_apps', is_flag=True, help='List available prebuilt apps from registry')
+@click.option('--force', '-f', is_flag=True, help='Overwrite existing directory when using --prebuild')
+def startapp(app_name, path, app_type, prebuild, list_apps, force):
     """Create a new Django app with RhamaaCMS structure."""
+
+    # List available registry apps and exit
+    if list_apps:
+        show_available_apps()
+        return
+
+    if not app_name:
+        console.print(Panel(
+            "[red]Error:[/red] Please provide an app name, e.g. [cyan]rhamaa startapp blog[/cyan]",
+            title="[red]Missing App Name[/red]",
+            expand=False
+        ))
+        return
 
     # Validate app name
     if not app_name.isidentifier():
@@ -26,7 +51,7 @@ def startapp(app_name, path):
     # Create app directory
     app_dir = Path(path) / app_name
 
-    if app_dir.exists():
+    if app_dir.exists() and not prebuild:
         console.print(Panel(
             f"[yellow]Warning:[/yellow] Directory '[bold]{app_dir}[/bold]' already exists.\n"
             "Please choose a different app name or remove the existing directory.",
@@ -35,15 +60,85 @@ def startapp(app_name, path):
         ))
         return
 
+    # If --prebuild provided, install registry app into apps/<app_name>
+    if prebuild:
+        # Check project validity (heuristic)
+        if not check_wagtail_project():
+            console.print(Panel(
+                "[yellow]Note:[/yellow] Could not verify a Wagtail project in current directory. Continuing anyway...",
+                title="[yellow]Project Check[/yellow]",
+                expand=False
+            ))
+
+        # Validate registry key
+        if not is_app_available(prebuild):
+            console.print(Panel(
+                f"[red]Error:[/red] Prebuilt app '[bold]{prebuild}[/bold]' not found in registry.\n"
+                f"Use [cyan]rhamaa startapp --list[/cyan] to see available apps.",
+                title="[red]App Not Found[/red]",
+                expand=False
+            ))
+            return
+
+        # If target exists and not force, warn
+        if app_dir.exists() and not force:
+            console.print(Panel(
+                f"[yellow]Warning:[/yellow] Target directory '[bold]{app_dir}[/bold]' already exists.\n"
+                f"Use [cyan]--force[/cyan] to overwrite.",
+                title="[yellow]Directory Exists[/yellow]",
+                expand=False
+            ))
+            return
+
+        app_info = get_app_info(prebuild)
+        console.print(Panel(
+            f"[bold cyan]{app_info['name']}[/bold cyan]\n"
+            f"[dim]{app_info['description']}[/dim]\n"
+            f"Repository: [blue]{app_info['repository']}[/blue]\n"
+            f"Branch: [yellow]{app_info['branch']}[/yellow]",
+            title=f"[cyan]Installing prebuilt: {prebuild} -> {app_name}[/cyan]",
+            expand=False
+        ))
+
+        # Download and extract into apps/<app_name>
+        zip_path = download_github_repo(app_info['repository'], app_info['branch'])
+        if not zip_path:
+            console.print(Panel(
+                "[red]Failed to download repository.[/red]",
+                title="[red]Download Failed[/red]",
+                expand=False
+            ))
+            return
+        success = extract_repo_to_apps(zip_path, app_name)
+        if not success:
+            console.print(Panel(
+                "[red]Failed to extract and install the app.[/red]",
+                title="[red]Installation Failed[/red]",
+                expand=False
+            ))
+            return
+
+        console.print(Panel(
+            f"[green]✓[/green] Successfully installed prebuilt app to '[bold]{app_dir}[/bold]'\n"
+            f"Next steps:\n"
+            f"1. Add '[cyan]{app_name}[/cyan]' to your INSTALLED_APPS\n"
+            f"2. Run migrations",
+            title="[green]Prebuilt Installation Successful[/green]",
+            expand=False
+        ))
+        return
+
+    # Otherwise, generate scaffold using selected template type
     console.print(Panel(
         f"[cyan]Creating new app:[/cyan] [bold]{app_name}[/bold]\n"
-        f"[dim]Location:[/dim] [blue]{app_dir}[/blue]",
+        f"[dim]Location:[/dim] [blue]{app_dir}[/blue]\n"
+        f"Template: [yellow]{app_type}[/yellow]",
         title="[cyan]RhamaaCMS App Generator[/cyan]",
         expand=False
     ))
 
     # Create app directory structure
-    create_app_structure(app_dir, app_name)
+    create_app_structure(app_dir, app_name, app_type)
 
     console.print(Panel(
         f"[green]✓[/green] Successfully created '[bold]{app_name}[/bold]' app!\n\n"
@@ -57,8 +152,31 @@ def startapp(app_name, path):
         expand=False
     ))
 
+def _render_template(content: str, context: dict) -> str:
+    """Very small placeholder renderer using {{var}} tokens."""
+    rendered = content
+    for key, value in context.items():
+        rendered = rendered.replace(f"{{{{{key}}}}}", str(value))
+    return rendered
 
-def create_app_structure(app_dir, app_name):
+
+def _read_template(rel_path: str) -> str:
+    """Read template file from rhamaa/templates/APPS_TEMPLATES using pkgutil for broad Py support."""
+    pkg = 'rhamaa.templates.APPS_TEMPLATES'
+    data = pkgutil.get_data(pkg, rel_path)
+    if data is None:
+        raise FileNotFoundError(f"Template not found: {rel_path}")
+    return data.decode('utf-8')
+
+
+def _write_from_template(rel_template_path: str, dest_path: Path, context: dict):
+    content = _read_template(rel_template_path)
+    rendered = _render_template(content, context)
+    dest_path.parent.mkdir(parents=True, exist_ok=True)
+    dest_path.write_text(rendered, encoding='utf-8')
+
+
+def create_app_structure(app_dir, app_name, app_type='wagtail'):
     """Create the complete app directory structure with RhamaaCMS templates."""
 
     # Create main directory
@@ -86,379 +204,106 @@ def create_app_structure(app_dir, app_name):
             '__init__.py' if init_path else app_dir / '__init__.py'
         init_file.touch()
 
+    # Context for templates
+    context = {
+        'app_name': app_name,
+        'app_title': app_name.replace('_', ' ').title(),
+        'app_verbose_name': app_name.replace('_', ' ').title(),
+        'app_config_class': f"{app_name.title().replace('_', '')}Config",
+        'app_name_upper': app_name.upper(),
+        'app_class_name': app_name.title().replace('_', ''),
+    }
+
+    # Choose template prefix based on type
+    prefix = 'minimal/' if app_type == 'minimal' else 'wagtail/'
+
     # Create app files with templates
-    create_apps_py(app_dir, app_name)
-    create_models_py(app_dir, app_name)
-    create_views_py(app_dir, app_name)
-    create_admin_py(app_dir, app_name)
-    create_urls_py(app_dir, app_name)
-    create_settings_py(app_dir, app_name)
-    create_tests_py(app_dir, app_name)
-    create_initial_migration(app_dir)
-    create_template_files(app_dir, app_name)
+    create_apps_py(app_dir, app_name, context, prefix)
+    create_models_py(app_dir, app_name, context, prefix)
+    create_views_py(app_dir, app_name, context, prefix)
+    create_admin_py(app_dir, app_name, context, prefix)
+    create_urls_py(app_dir, app_name, context, prefix)
+    create_settings_py(app_dir, app_name, context, prefix)
+    create_tests_py(app_dir, app_name, context, prefix)
+    create_initial_migration(app_dir, context, prefix)
+    create_template_files(app_dir, app_name, context, prefix)
 
 
-def create_apps_py(app_dir, app_name):
-    """Create apps.py with RhamaaCMS configuration."""
-    content = f'''from django.apps import AppConfig
+def create_apps_py(app_dir, app_name, context, prefix=''):
+    """Create apps.py with RhamaaCMS configuration from template."""
+    _write_from_template(f'{prefix}apps.py.tpl', app_dir / 'apps.py', context)
 
 
-class {app_name.title().replace('_', '')}Config(AppConfig):
-    default_auto_field = 'django.db.models.BigAutoField'
-    name = 'apps.{app_name}'
-    verbose_name = '{app_name.replace("_", " ").title()}'
-'''
-
-    (app_dir / 'apps.py').write_text(content)
+def create_models_py(app_dir, app_name, context, prefix=''):
+    """Create models.py from template."""
+    _write_from_template(f'{prefix}models.py.tpl', app_dir / 'models.py', context)
 
 
-def create_models_py(app_dir, app_name):
-    """Create models.py with RhamaaCMS base imports."""
-    content = '''from django.db import models
-from wagtail.models import Page
-from wagtail.fields import RichTextField, StreamField
-from wagtail.admin.panels import FieldPanel
-from wagtail.search import index
-
-from utils.models import BasePage
-from utils.blocks import StoryBlock
+def create_views_py(app_dir, app_name, context, prefix=''):
+    """Create views.py from template."""
+    _write_from_template(f'{prefix}views.py.tpl', app_dir / 'views.py', context)
 
 
-# Create your models here.
-
-class ExamplePage(BasePage):
-    """Example page model for demonstration."""
-    
-    introduction = models.TextField(
-        help_text='Text to describe the page',
-        blank=True
-    )
-    
-    body = StreamField(
-        StoryBlock(),
-        verbose_name="Page body",
-        blank=True,
-        use_json_field=True
-    )
-    
-    content_panels = BasePage.content_panels + [
-        FieldPanel('introduction'),
-        FieldPanel('body'),
-    ]
-    
-    search_fields = BasePage.search_fields + [
-        index.SearchField('introduction'),
-        index.SearchField('body'),
-    ]
-    
-    class Meta:
-        verbose_name = "Example Page"
-        verbose_name_plural = "Example Pages"
-'''
-
-    (app_dir / 'models.py').write_text(content)
+def create_admin_py(app_dir, app_name, context, prefix=''):
+    """Create admin.py from template."""
+    _write_from_template(f'{prefix}admin.py.tpl', app_dir / 'admin.py', context)
 
 
-def create_views_py(app_dir, app_name):
-    """Create views.py with basic structure."""
-    app_title = app_name.replace("_", " ").title()
-    content = f'''from django.shortcuts import render
-from django.http import HttpResponse
-from wagtail.models import Page
+def create_urls_py(app_dir, app_name, context, prefix=''):
+    """Create urls.py for the app from template."""
+    _write_from_template(f'{prefix}urls.py.tpl', app_dir / 'urls.py', context)
 
 
-# Create your views here.
-
-def index(request):
-    """Example view function."""
-    return HttpResponse("Hello from {app_name} app!")
+def create_settings_py(app_dir, app_name, context, prefix=''):
+    """Create settings.py from template."""
+    _write_from_template(f'{prefix}settings.py.tpl', app_dir / 'settings.py', context)
 
 
-def example_view(request):
-    """Example view with template rendering."""
-    context = {{
-        'app_name': '{app_name}',
-        'title': '{app_title}'
-    }}
-    return render(request, '{app_name}/index.html', context)
-'''
-
-    (app_dir / 'views.py').write_text(content)
+def create_tests_py(app_dir, app_name, context, prefix=''):
+    """Create tests.py from template."""
+    _write_from_template(f'{prefix}tests.py.tpl', app_dir / 'tests.py', context)
 
 
-def create_admin_py(app_dir, app_name):
-    """Create admin.py with Wagtail integration."""
-    content = '''from django.contrib import admin
-from wagtail.contrib.modeladmin.options import ModelAdmin, modeladmin_register
-
-from .models import ExamplePage
-
-
-# Register your models here.
-
-@admin.register(ExamplePage)
-class ExamplePageAdmin(admin.ModelAdmin):
-    list_display = ['title', 'live', 'first_published_at']
-    list_filter = ['live', 'first_published_at']
-    search_fields = ['title', 'introduction']
+def create_initial_migration(app_dir, context, prefix=''):
+    """Create initial migration file from template."""
+    # Minimal template might not include migrations; guard safely
+    try:
+        _write_from_template(f'{prefix}migrations/0001_initial.py.tpl', app_dir / 'migrations' / '0001_initial.py', context)
+    except FileNotFoundError:
+        pass
 
 
-# Wagtail ModelAdmin (optional - for non-page models)
-# class ExampleModelAdmin(ModelAdmin):
-#     model = ExamplePage
-#     menu_label = 'Example Pages'
-#     menu_icon = 'doc-full'
-#     list_display = ('title', 'live', 'first_published_at')
-#     search_fields = ('title', 'introduction')
-
-# modeladmin_register(ExampleModelAdmin)
-'''
-
-    (app_dir / 'admin.py').write_text(content)
+def create_template_files(app_dir, app_name, context, prefix=''):
+    """Create template files for the app from .tpl files."""
+    # HTML template files are only for wagtail type
+    if prefix == 'wagtail/':
+        _write_from_template('wagtail/templates/index.html.tpl', app_dir / 'templates' / app_name / 'index.html', context)
+        _write_from_template('wagtail/templates/example_page.html.tpl', app_dir / 'templates' / app_name / 'example_page.html', context)
 
 
-def create_urls_py(app_dir, app_name):
-    """Create urls.py for the app."""
-    content = f'''from django.urls import path
-from . import views
+def show_available_apps():
+    """Display all available apps in a formatted table (inline to avoid add dependency)."""
+    apps = list_available_apps()
 
-app_name = '{app_name}'
+    console.print(Panel(
+        "[bold cyan]Available Prebuilt Apps[/bold cyan]\n"
+        "[dim]Use 'rhamaa startapp <app_name> --prebuild <registry_key>' to install an app[/dim]",
+        expand=False
+    ))
 
-urlpatterns = [
-    path('', views.index, name='index'),
-    path('example/', views.example_view, name='example'),
-]
-'''
+    table = Table(show_header=True, header_style="bold blue", box=rich_box.ROUNDED)
+    table.add_column("Key", style="bold cyan", width=12)
+    table.add_column("Name", style="white", width=25)
+    table.add_column("Description", style="white", min_width=30)
+    table.add_column("Category", style="green", width=15)
 
-    (app_dir / 'urls.py').write_text(content)
-
-
-def create_settings_py(app_dir, app_name):
-    """Create settings.py for app-specific configurations."""
-    content = f'''"""
-Settings for {app_name} app
-This file contains app-specific settings that will be automatically
-imported by RhamaaCMS auto-discovery system.
-"""
-
-# App-specific settings
-{app_name.upper()}_SETTINGS = {{
-    'ENABLED': True,
-    'VERSION': '1.0.0',
-    'DESCRIPTION': '{app_name.replace("_", " ").title()} application for RhamaaCMS',
-}}
-
-# Example: Custom app configurations
-# {app_name.upper()}_CONFIG = {{
-#     'MAX_ITEMS': 100,
-#     'CACHE_TIMEOUT': 300,
-#     'ENABLE_NOTIFICATIONS': True,
-# }}
-
-# Example: Add to Django settings if needed
-# INSTALLED_APPS_EXTRA = [
-#     'some_third_party_app',
-# ]
-
-# Example: Middleware additions
-# MIDDLEWARE_EXTRA = [
-#     'path.to.custom.middleware',
-# ]
-'''
-
-    (app_dir / 'settings.py').write_text(content)
-
-
-def create_tests_py(app_dir, app_name):
-    """Create tests.py with basic test structure."""
-    content = f'''from django.test import TestCase, Client
-from django.urls import reverse
-from wagtail.test.utils import WagtailPageTests
-from wagtail.models import Page
-
-from .models import ExamplePage
-
-
-class {app_name.title().replace('_', '')}ViewTests(TestCase):
-    """Test views for {app_name} app."""
-    
-    def setUp(self):
-        self.client = Client()
-    
-    def test_index_view(self):
-        """Test the index view."""
-        response = self.client.get(reverse('{app_name}:index'))
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Hello from {app_name}')
-    
-    def test_example_view(self):
-        """Test the example view."""
-        response = self.client.get(reverse('{app_name}:example'))
-        self.assertEqual(response.status_code, 200)
-
-
-class ExamplePageTests(WagtailPageTests):
-    """Test ExamplePage model."""
-    
-    def test_can_create_example_page(self):
-        """Test that we can create an ExamplePage."""
-        # Get the root page
-        root_page = Page.objects.get(id=2)
-        
-        # Create an ExamplePage
-        example_page = ExamplePage(
-            title="Test Example Page",
-            introduction="This is a test page",
-            slug="test-example-page"
+    for app_key, app_info in apps.items():
+        table.add_row(
+            app_key,
+            app_info.get('name', ''),
+            app_info.get('description', ''),
+            app_info.get('category', '')
         )
-        
-        # Add it as a child of the root page
-        root_page.add_child(instance=example_page)
-        
-        # Check that the page was created
-        self.assertTrue(ExamplePage.objects.filter(title="Test Example Page").exists())
-    
-    def test_example_page_str(self):
-        """Test the string representation of ExamplePage."""
-        page = ExamplePage(title="Test Page")
-        self.assertEqual(str(page), "Test Page")
-'''
 
-    (app_dir / 'tests.py').write_text(content)
-
-
-def create_initial_migration(app_dir):
-    """Create initial migration file."""
-    content = '''# Generated by RhamaaCMS CLI
-
-from django.db import migrations
-
-
-class Migration(migrations.Migration):
-
-    initial = True
-
-    dependencies = [
-        ('wagtailcore', '0089_log_entry_data_json_null_to_object'),
-        ('utils', '0001_initial'),
-    ]
-
-    operations = [
-        # Initial migration - models will be added when you run makemigrations
-    ]
-'''
-
-    (app_dir / 'migrations' / '0001_initial.py').write_text(content)
-
-
-def create_template_files(app_dir, app_name):
-    """Create template files for the app."""
-
-    # Create index.html template
-    index_template = f'''{{% extends "base.html" %}}
-{{% load static %}}
-
-{{% block title %}}{app_name.replace("_", " ").title()}{{% endblock %}}
-
-{{% block content %}}
-<div class="container mx-auto px-4 py-8">
-    <div class="max-w-4xl mx-auto">
-        <h1 class="text-4xl font-bold text-gray-900 mb-6">
-            {{{{ title }}}}
-        </h1>
-        
-        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
-            <h2 class="text-2xl font-semibold text-gray-800 mb-4">
-                Welcome to {{{{ app_name }}}} App
-            </h2>
-            
-            <p class="text-gray-600 mb-4">
-                This is a starter template for your new RhamaaCMS app. 
-                You can customize this template and add your own content.
-            </p>
-            
-            <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-4">
-                <div class="flex">
-                    <div class="ml-3">
-                        <p class="text-sm text-blue-700">
-                            <strong>Next Steps:</strong>
-                        </p>
-                        <ul class="text-sm text-blue-600 mt-2 list-disc list-inside">
-                            <li>Customize your models in <code>models.py</code></li>
-                            <li>Add your views in <code>views.py</code></li>
-                            <li>Update this template in <code>templates/{app_name}/index.html</code></li>
-                            <li>Add your static files in <code>static/</code> directory</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-                <div class="bg-gray-50 p-4 rounded-lg">
-                    <h3 class="font-semibold text-gray-800 mb-2">Models</h3>
-                    <p class="text-sm text-gray-600">
-                        Define your data models in <code>models.py</code>
-                    </p>
-                </div>
-                
-                <div class="bg-gray-50 p-4 rounded-lg">
-                    <h3 class="font-semibold text-gray-800 mb-2">Views</h3>
-                    <p class="text-sm text-gray-600">
-                        Create your view functions in <code>views.py</code>
-                    </p>
-                </div>
-                
-                <div class="bg-gray-50 p-4 rounded-lg">
-                    <h3 class="font-semibold text-gray-800 mb-2">Templates</h3>
-                    <p class="text-sm text-gray-600">
-                        Design your HTML templates in <code>templates/</code>
-                    </p>
-                </div>
-                
-                <div class="bg-gray-50 p-4 rounded-lg">
-                    <h3 class="font-semibold text-gray-800 mb-2">Static Files</h3>
-                    <p class="text-sm text-gray-600">
-                        Add CSS, JS, and images in <code>static/</code>
-                    </p>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-{{% endblock %}}
-'''
-
-    (app_dir / 'templates' / app_name / 'index.html').write_text(index_template)
-
-    # Create example page template
-    page_template = f'''{{% extends "base_page.html" %}}
-{{% load static wagtailcore_tags %}}
-
-{{% block title %}}{{% if page.seo_title %}}{{% endif %}}{{% endblock %}}
-
-{{% block content %}}
-<div class="container mx-auto px-4 py-8">
-    <div class="max-w-4xl mx-auto">
-        <h1 class="text-4xl font-bold text-gray-900 mb-6">
-            {{{{ page.title }}}}
-        </h1>
-        
-        {{% if page.introduction %}}
-        <div class="text-xl text-gray-600 mb-8">
-            {{{{ page.introduction|linebreaks }}}}
-        </div>
-        {{% endif %}}
-        
-        {{% if page.body %}}
-        <div class="prose prose-lg max-w-none">
-            {{% for block in page.body %}}
-                {{% include_block block %}}
-            {{% endfor %}}
-        </div>
-        {{% endif %}}
-    </div>
-</div>
-{{% endblock %}}
-'''
-
-    (app_dir / 'templates' / app_name / 'example_page.html').write_text(page_template)
+    console.print(table)
+    console.print(f"\n[dim]Total: {len(apps)} apps available[/dim]")

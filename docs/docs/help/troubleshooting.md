@@ -170,7 +170,7 @@ This guide helps you resolve common issues when using Rhamaa CLI. If you don't f
 2. **Navigate to Project Root**
    ```bash
    cd /path/to/your/wagtail/project
-   rhamaa add mqtt
+   rhamaa startapp iot --prebuild mqtt
    ```
 
 3. **Verify Project Structure**
@@ -187,19 +187,18 @@ This guide helps you resolve common issues when using Rhamaa CLI. If you don't f
 
 1. **Check Available Apps**
    ```bash
-   rhamaa add --list
-   rhamaa registry list
+   rhamaa startapp --list
    ```
 
 2. **Check Spelling**
    ```bash
    # Correct: mqtt, users, articles, lms
-   rhamaa add mqtt  # not MQTT or Mqtt
+   # Example install key usage is on the left; use exact lowercase keys
    ```
 
 3. **Get App Information**
    ```bash
-   rhamaa registry info mqtt
+   rhamaa startapp --list
    ```
 
 ### App Already Exists
@@ -210,7 +209,7 @@ This guide helps you resolve common issues when using Rhamaa CLI. If you don't f
 
 1. **Use Force Flag**
    ```bash
-   rhamaa add mqtt --force
+   rhamaa startapp iot --prebuild mqtt --force
    ```
 
 2. **Remove Existing App**
@@ -485,7 +484,8 @@ rhamaa --version  # or python -m rhamaa --version
 pip list | grep -E "(rhamaa|wagtail|django)"
 
 # Error messages
-rhamaa add mqtt --verbose  # if available
+   # For detailed steps, re-run with --force and capture full output
+   rhamaa startapp iot --prebuild mqtt --force
 ```
 
 ### Log Files
@@ -529,8 +529,8 @@ When creating GitHub issues:
 pip install --upgrade rhamaa
 
 # Check for issues
-rhamaa --help
-rhamaa registry list
+   rhamaa --help
+   rhamaa startapp --list
 
 # Clean temporary files
 rm -rf /tmp/rhamaa_*

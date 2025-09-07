@@ -2,44 +2,44 @@
 
 Sistem manajemen aplikasi Rhamaa CLI memungkinkan Anda dengan mudah menambahkan aplikasi pre-built ke proyek Wagtail Anda. Bagian ini mencakup semua perintah terkait aplikasi dan workflow.
 
-## Menambahkan Aplikasi
+## Menambahkan Aplikasi Prebuilt
 
-### `rhamaa add`
+### `rhamaa startapp <NamaApp> --prebuild <key>`
 
-Install aplikasi pre-built dari ekosistem RhamaaCMS.
+Install aplikasi prebuilt dari ekosistem RhamaaCMS ke dalam `apps/<NamaApp>`.
 
 ```bash
-rhamaa add <nama_aplikasi> [opsi]
+rhamaa startapp <NamaApp> --prebuild <key>
 ```
 
 #### Penggunaan Dasar
 
 ```bash
-# Install aplikasi MQTT
-rhamaa add mqtt
+# Install aplikasi MQTT ke apps/iot
+rhamaa startapp iot --prebuild mqtt
 
-# Install aplikasi users
-rhamaa add users
+# Install aplikasi users ke apps/users
+rhamaa startapp users --prebuild users
 
-# Install aplikasi articles
-rhamaa add articles
+# Install aplikasi articles ke apps/articles
+rhamaa startapp articles --prebuild articles
 ```
 
 #### Opsi
 
 | Opsi | Deskripsi |
 |------|-----------|
-| `--list`, `-l` | Tampilkan semua aplikasi yang tersedia |
-| `--force`, `-f` | Paksa install meskipun aplikasi sudah ada |
+| `--list` | Tampilkan semua aplikasi prebuilt yang tersedia |
+| `--force`, `-f` | Timpa direktori tujuan jika sudah ada (untuk --prebuild) |
 
 #### Contoh
 
 ```bash
 # Tampilkan aplikasi yang tersedia
-rhamaa add --list
+rhamaa startapp --list
 
-# Paksa install ulang aplikasi
-rhamaa add mqtt --force
+# Paksa install ulang aplikasi prebuilt ke folder yang sama
+rhamaa startapp iot --prebuild mqtt --force
 ```
 
 ## Melihat Aplikasi yang Tersedia
@@ -47,7 +47,7 @@ rhamaa add mqtt --force
 ### Lihat Semua Aplikasi
 
 ```bash
-rhamaa add --list
+rhamaa startapp --list
 ```
 
 Ini menampilkan tabel terformat yang menunjukkan:
@@ -165,7 +165,7 @@ proyek_anda/
 └── manage.py
 ```
 
-## Instalasi Paksa
+## Instalasi Paksa (Force)
 
 ### Kapan Menggunakan `--force`
 
@@ -178,7 +178,7 @@ Gunakan flag `--force` ketika Anda ingin:
 ### Contoh
 
 ```bash
-rhamaa add mqtt --force
+rhamaa startapp iot --prebuild mqtt --force
 ```
 
 ### Apa yang Terjadi
@@ -207,10 +207,10 @@ Please run this command from the root of your Wagtail project.
 
 ```
 Error: App 'myapp' not found in registry.
-Use 'rhamaa add --list' to see available apps.
+Use 'rhamaa startapp --list' to see available apps.
 ```
 
-**Solusi**: Periksa aplikasi yang tersedia dengan `rhamaa add --list` dan gunakan nama aplikasi yang benar.
+**Solusi**: Periksa aplikasi yang tersedia dengan `rhamaa startapp --list` dan gunakan nama aplikasi yang benar.
 
 #### "Aplikasi Sudah Ada"
 
@@ -219,7 +219,7 @@ Warning: App 'mqtt' already exists in apps/ directory.
 Use --force flag to overwrite existing app.
 ```
 
-**Solusi**: Gunakan `rhamaa add mqtt --force` untuk reinstall.
+**Solusi**: Gunakan `rhamaa startapp iot --prebuild mqtt --force` untuk reinstall.
 
 #### "Download Gagal"
 
@@ -259,8 +259,8 @@ Please check your internet connection and try again.
 ```bash
 rhamaa start BlogSaya
 cd BlogSaya
-rhamaa add articles
-rhamaa add users
+rhamaa startapp articles --prebuild articles
+rhamaa startapp users --prebuild users
 # Konfigurasi dan jalankan migrasi
 ```
 
@@ -269,8 +269,8 @@ rhamaa add users
 ```bash
 rhamaa start DashboardIoT
 cd DashboardIoT
-rhamaa add mqtt
-rhamaa add users
+rhamaa startapp iot --prebuild mqtt
+rhamaa startapp users --prebuild users
 # Konfigurasi pengaturan MQTT
 ```
 
@@ -279,9 +279,9 @@ rhamaa add users
 ```bash
 rhamaa start PlatformEdu
 cd PlatformEdu
-rhamaa add lms
-rhamaa add users
-rhamaa add articles
+rhamaa startapp lms --prebuild lms
+rhamaa startapp users --prebuild users
+rhamaa startapp articles --prebuild articles
 # Konfigurasi pengaturan LMS
 ```
 

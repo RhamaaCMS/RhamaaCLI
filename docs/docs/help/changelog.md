@@ -15,6 +15,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dependency resolution
 - Configuration templates
 
+## [0.2.0b1] - 2025-09-07
+
+### Added
+- `startapp`: dukungan template `--type` dengan opsi `wagtail` (default) dan `minimal`
+- `startapp`: instalasi prebuilt via `--prebuild <key>` dan daftar registry via `--list`
+- Packaging: sertakan template baru di `rhamaa/templates/APPS_TEMPLATES/**/*`
+
+### Changed
+- Dokumentasi: migrasi seluruh contoh dari `rhamaa add`/`rhamaa registry` ke alur `rhamaa startapp`
+- CLI help: hanya menampilkan perintah utama `start` dan `startapp`
+
+### Deprecated
+- Perintah `rhamaa registry` (fungsi list pindah ke `startapp --list`)
+- Perintah `rhamaa add` (digantikan `startapp --prebuild`)
+
+### Removed
+- Folder template lama `rhamaa/templates/APPS_TEMPLATE/`
+
+### Fixed
+- `startapp`: FileNotFoundError untuk beberapa template yang hilang (menambahkan `.tpl` yang diperlukan untuk `wagtail` dan `minimal`)
+- Dokumentasi `INSTALLED_APPS` diperbaiki ke `apps.<nama_app>`
+
 ## [0.1.0b1] - 2024-01-15
 
 ### Added

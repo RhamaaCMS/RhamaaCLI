@@ -1,25 +1,16 @@
-# Registry System
+# Registry System (Deprecated CLI group)
 
-The Rhamaa CLI registry system manages the catalog of available prebuilt applications. This section covers all registry-related commands and how the system works.
+The Rhamaa CLI registry system manages the catalog of available prebuilt applications.
 
-## Registry Commands
-
-### `rhamaa registry`
-
-The main registry command group provides access to app catalog management.
-
-```bash
-rhamaa registry <subcommand>
-```
+As of this version, the standalone `rhamaa registry` command group is deprecated.
+Use `rhamaa startapp --list` to view available apps and `rhamaa startapp <AppName> --prebuild <key>` to install.
 
 ## Listing Apps
 
-### `rhamaa registry list`
-
-Display all apps in the registry, organized by category.
+### List Apps
 
 ```bash
-rhamaa registry list
+rhamaa startapp --list
 ```
 
 #### Output Format
@@ -53,18 +44,12 @@ Apps are organized into these categories:
 
 ## App Information
 
-### `rhamaa registry info`
+### App Info
 
-Get detailed information about a specific app.
-
-```bash
-rhamaa registry info <app_name>
-```
+For detailed information, check the registry file or the app repository README.
 
 #### Example
 
-```bash
-rhamaa registry info mqtt
 ```
 
 #### Output
@@ -80,7 +65,7 @@ rhamaa registry info mqtt
 │ Repository: https://github.com/RhamaaCMS/mqtt-apps             │
 │ Branch: main                                                    │
 │                                                                 │
-│ Install with: rhamaa add mqtt                                   │
+│ Install with: rhamaa startapp blog --prebuild mqtt               │
 └─────────────────────────────────────────────────────────────────┘
 ```
 

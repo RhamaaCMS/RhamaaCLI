@@ -4,6 +4,7 @@ include requirements.txt
 include pyproject.toml
 include setup.py
 recursive-include rhamaa *.py
+recursive-include rhamaa/templates/APPS_TEMPLATES *
 recursive-exclude * __pycache__
 recursive-exclude * *.py[co]
 recursive-exclude * .DS_Store

@@ -6,8 +6,6 @@ from rich.markdown import Markdown
 from rich import box
 from rich.table import Table
 from rhamaa.commands.start import start
-from rhamaa.commands.add import add
-from rhamaa.commands.registry import registry
 from rhamaa.commands.startapp import startapp
 
 console = Console()
@@ -46,9 +44,9 @@ ASCII_LOGO = '''\
 
 HELP_COMMANDS = [
     ("start <ProjectName>", "[green]Create a new Wagtail project[/green]"),
-    ("startapp <AppName>", "[yellow]Create a new Django app with RhamaaCMS structure[/yellow]"),
-    ("add <AppName>", "[cyan]Add a prebuilt app (users, article, LMS, IoT, etc)[/cyan]"),
-    ("registry list", "[blue]List all available apps in registry[/blue]"),
+    ("startapp <AppName>", "[yellow]Create a new Django app (types: wagtail|minimal)[/yellow]"),
+    ("startapp --list", "[blue]List available prebuilt apps from registry[/blue]"),
+    ("startapp <AppName> --prebuild <key>", "[cyan]Install a prebuilt app into apps/<AppName>[/cyan]"),
     ("help", "[magenta]Show this help message[/magenta]")
 ]
 
@@ -81,5 +79,3 @@ def show_logo_and_help():
 
 main.add_command(start)
 main.add_command(startapp)
-main.add_command(add)
-main.add_command(registry)

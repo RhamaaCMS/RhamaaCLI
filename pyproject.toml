@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "rhamaa"
-version = "0.1.0b1"
+version = "0.2.0b1"
 description = "CLI tools to accelerate Wagtail web development with RhamaaCMS"
 readme = "README.md"
 license = {text = "MIT"}
@@ -59,11 +59,21 @@ Repository = "https://github.com/RhamaaCMS/RhamaaCLI"
 rhamaa = "rhamaa.cli:main"
 
 [tool.setuptools]
-packages = ["rhamaa", "rhamaa.commands"]
+packages = [
+    "rhamaa",
+    "rhamaa.commands",
+    "rhamaa.templates",
+    "rhamaa.templates.APPS_TEMPLATES",
+    "rhamaa.templates.APPS_TEMPLATES.wagtail",
+    "rhamaa.templates.APPS_TEMPLATES.minimal",
+]
 include-package-data = true
 
 [tool.setuptools.package-data]
-rhamaa = ["*.py"]
+rhamaa = [
+    "*.py",
+    "templates/APPS_TEMPLATES/**/*"
+]
 
 [tool.black]
 line-length = 88

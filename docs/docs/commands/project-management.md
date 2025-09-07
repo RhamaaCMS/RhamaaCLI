@@ -78,6 +78,8 @@ rhamaa startapp blog
 - **Structured Layout**: Creates apps in the `apps/` directory
 - **RhamaaCMS Standards**: Follows RhamaaCMS app conventions
 - **Ready to Use**: Includes basic model, view, and admin setup
+- **Template Types**: `--type wagtail` (default) or `--type minimal`
+- **Prebuilt Apps**: Install with `--prebuild <key>` and view availability with `--list`
 
 ## Project Validation
 
@@ -216,7 +218,7 @@ The template is ready for deployment to:
 After creating your project:
 
 1. **Set Up Environment**: Create virtual environment and install dependencies
-2. **Add Applications**: Use `rhamaa add` to install prebuilt apps
+2. **Add Applications**: Use `rhamaa startapp <AppName> --prebuild <key>` to install prebuilt apps (see `rhamaa startapp --list`)
 3. **Configure Settings**: Customize settings for your needs
 4. **Run Migrations**: Set up the database
 5. **Create Superuser**: Access the admin interface
