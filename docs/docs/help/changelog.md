@@ -8,12 +8,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Planned Features
+
+#### Short Term (v0.4.x)
+- **Optional Dependencies (Extras)** - Installation variants like `pip install "rhamaa[cms]"`
+  - `rhamaa[cms]` - Include Wagtail and CMS dependencies
+  - `rhamaa[full]` - All dependencies for complete setup
+  - `rhamaa[dev]` - Development tools and testing utilities
 - Remote registry support
 - App update management
 - Custom registry sources
+
+#### Medium Term (v0.5.x - v0.6.x)
+- **Multi-Framework Support** - Expand beyond Wagtail
+  - Django projects without CMS
+  - FastAPI projects for APIs
+  - Flask projects for microservices
+- **Project Templates** - Framework-specific scaffolding
+  - `rhamaa start MyAPI --type fastapi`
+  - `rhamaa start MyApp --type django`
+  - `rhamaa start MyService --type flask`
 - Version management for apps
 - Dependency resolution
 - Configuration templates
+
+#### Long Term (v1.0+)
+- **AI/ML Project Support** - Data science and AI workflows
+  - `rhamaa start MyAI --type ml`
+  - `rhamaa start MyModel --type pytorch`
+  - Jupyter notebook integration
+  - MLOps templates and workflows
+- **IoT Project Support** - Internet of Things development
+  - `rhamaa start MyIoT --type iot`
+  - Embedded system templates
+  - Device management scaffolding
+  - Real-time data processing templates
+- **Multi-Domain CLI** - Universal project management
+  - Web development (Django, FastAPI, Flask)
+  - AI/ML projects (PyTorch, TensorFlow, Scikit-learn)
+  - IoT projects (MicroPython, Arduino, Raspberry Pi)
+  - Desktop applications (Tkinter, PyQt, Kivy)
+- **Advanced Features**
+  - Project dependency graphs
+  - Cross-project component sharing
+  - Automated testing pipelines
+  - Deployment automation
+  - Cloud integration (AWS, GCP, Azure)
 
 ## [0.3.1] - 2025-09-09
 
