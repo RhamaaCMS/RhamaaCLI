@@ -1,5 +1,6 @@
 import click
 import subprocess
+import json
 from pathlib import Path
 import pkgutil
 from rich.console import Console
@@ -11,38 +12,27 @@ from rhamaa.utils import download_github_repo, extract_repo_to_apps, check_wagta
 
 console = Console()
 
-# Registry of available prebuilt apps
-APP_REGISTRY = {
-    "mqtt": {
-        "name": "MQTT Apps",
-        "description": "IoT MQTT integration for Wagtail",
-        "repository": "https://github.com/RhamaaCMS/mqtt-apps",
-        "branch": "main",
-        "category": "IoT"
-    },
-    "users": {
-        "name": "User Management",
-        "description": "Advanced user management system",
-        "repository": "https://github.com/RhamaaCMS/user-apps",
-        "branch": "main",
-        "category": "Authentication"
-    },
-    "articles": {
-        "name": "Article System",
-        "description": "Blog and article management",
-        "repository": "https://github.com/RhamaaCMS/articles-app",
-        "branch": "main",
-        "category": "Content"
-    }
-}
+def load_app_registry():
+    """Load app registry from JSON file."""
+    try:
+        data = pkgutil.get_data('rhamaa.templates', 'app_list.json')
+        if data is None:
+            console.print("[red]Error:[/red] App registry file not found")
+            return {}
+        return json.loads(data.decode('utf-8'))
+    except (json.JSONDecodeError, Exception) as e:
+        console.print(f"[red]Error loading app registry:[/red] {e}")
+        return {}
 
 def get_app_info(app_name):
     """Get information about a specific app."""
-    return APP_REGISTRY.get(app_name.lower())
+    registry = load_app_registry()
+    return registry.get(app_name.lower())
 
 def is_app_available(app_name):
     """Check if an app is available in the registry."""
-    return app_name.lower() in APP_REGISTRY
+    registry = load_app_registry()
+    return app_name.lower() in registry
 
 @click.command()
 @click.argument('app_name', required=False)
@@ -196,22 +186,41 @@ def create_template_files(app_dir, app_name, context, prefix=''):
 
 def show_available_apps():
     """Display available prebuilt apps."""
+    registry = load_app_registry()
+    
+    if not registry:
+        console.print("[red]No prebuilt apps available[/red]")
+        return
+    
     console.print(Panel(
         "[bold cyan]Available Prebuilt Apps[/bold cyan]\n"
         "[dim]Use: rhamaa startapp <app_name> --prebuild <key>[/dim]",
         expand=False
     ))
     
-    table = Table(show_header=True, header_style="bold blue", box=box.ROUNDED)
-    table.add_column("Key", style="bold cyan", width=12)
-    table.add_column("Name", style="white", width=20)
-    table.add_column("Description", style="dim", min_width=30)
-    table.add_column("Category", style="green", width=15)
+    # Group by category
+    categories = {}
+    for key, info in registry.items():
+        category = info.get('category', 'Other')
+        if category not in categories:
+            categories[category] = []
+        categories[category].append((key, info))
     
-    for key, info in APP_REGISTRY.items():
-        table.add_row(key, info['name'], info['description'], info['category'])
+    # Display by category
+    for category, apps in categories.items():
+        console.print(f"\n[bold green]{category}[/bold green]")
+        
+        table = Table(show_header=True, header_style="bold blue", box=box.SIMPLE)
+        table.add_column("Key", style="bold cyan", width=12)
+        table.add_column("Name", style="white", width=20)
+        table.add_column("Description", style="dim", min_width=30)
+        
+        for key, info in apps:
+            table.add_row(key, info['name'], info['description'])
+        
+        console.print(table)
     
-    console.print(table)
+    console.print(f"\n[dim]Total: {len(registry)} apps available[/dim]")
 
 def install_prebuilt_app(app_name, prebuild_key, force):
     """Install a prebuilt app from registry."""

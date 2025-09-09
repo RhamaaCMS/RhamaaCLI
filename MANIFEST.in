@@ -1,10 +1,5 @@
 include README.md
-include LICENSE
 include requirements.txt
-include pyproject.toml
-include setup.py
-recursive-include rhamaa *.py
-recursive-include rhamaa/templates/APPS_TEMPLATES *
-recursive-exclude * __pycache__
-recursive-exclude * *.py[co]
-recursive-exclude * .DS_Store
+recursive-include rhamaa/templates *.json
+recursive-include rhamaa/templates/APPS_TEMPLATES *.tpl
+recursive-include rhamaa/templates/APPS_TEMPLATES *.html

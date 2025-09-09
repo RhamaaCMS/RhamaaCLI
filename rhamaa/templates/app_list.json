@@ -1,0 +1,37 @@
+{
+  "mqtt": {
+    "name": "MQTT Apps",
+    "description": "IoT MQTT integration for Wagtail",
+    "repository": "https://github.com/RhamaaCMS/mqtt-apps",
+    "branch": "main",
+    "category": "IoT"
+  },
+  "users": {
+    "name": "User Management",
+    "description": "Advanced user management system",
+    "repository": "https://github.com/RhamaaCMS/user-apps",
+    "branch": "main",
+    "category": "Authentication"
+  },
+  "articles": {
+    "name": "Article System",
+    "description": "Blog and article management",
+    "repository": "https://github.com/RhamaaCMS/articles-app",
+    "branch": "main",
+    "category": "Content"
+  },
+  "lms": {
+    "name": "Learning Management System",
+    "description": "Complete LMS with courses and lessons",
+    "repository": "https://github.com/RhamaaCMS/lms-app",
+    "branch": "main",
+    "category": "Education"
+  },
+  "ecommerce": {
+    "name": "E-Commerce System",
+    "description": "Online store with products and orders",
+    "repository": "https://github.com/RhamaaCMS/ecommerce-app",
+    "branch": "main",
+    "category": "Commerce"
+  }
+}
