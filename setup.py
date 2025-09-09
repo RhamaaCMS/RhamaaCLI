@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="rhamaa",
-    version="0.2.0b1",  # Beta version
+    version="0.3.0",
     description="CLI tools to accelerate Wagtail web development with RhamaaCMS.",
     long_description=long_description,
     long_description_content_type="text/markdown",

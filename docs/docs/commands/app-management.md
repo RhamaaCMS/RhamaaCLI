@@ -1,53 +1,41 @@
 # App Management
 
-Rhamaa CLI lets you create new apps and install prebuilt apps directly via the `startapp` command.
+The `startapp` command handles all app creation and installation.
 
-## Creating a New App
+## Create New Apps
 
-### `rhamaa startapp <AppName>`
-
-Create a new Django app scaffold.
-
+### Minimal Django App (Default)
 ```bash
-# Wagtail-oriented scaffold (default)
-rhamaa startapp blog --type wagtail
-
-# Minimal Django scaffold
-rhamaa startapp blog --type minimal
+rhamaa startapp blog
 ```
+Creates standard Django app in `apps/blog/` using `django-admin startapp`.
 
-## Installing Prebuilt Applications
-
-### `rhamaa startapp <AppName> --prebuild <key>`
-
-Install prebuilt applications from the RhamaaCMS registry into `apps/<AppName>`.
-
+### Wagtail App
 ```bash
-# Install the MQTT app into apps/iot
+rhamaa startapp pages --type wagtail
+```
+Creates Wagtail-ready app with models, templates, and admin configuration.
+
+## Install Prebuilt Apps
+
+### Basic Installation
+```bash
 rhamaa startapp iot --prebuild mqtt
-
-# Install the users app into apps/users
-rhamaa startapp users --prebuild users
-
-# Install the articles app into apps/articles
-rhamaa startapp articles --prebuild articles
 ```
+Downloads and installs MQTT app from GitHub into `apps/iot/`.
 
-#### Options
+### Available Options
+- `--list` - Show available prebuilt apps
+- `--force` - Overwrite existing app
+- `--type` - App template type (minimal/wagtail)
 
-| Option | Description |
-|--------|-------------|
-| `--list` | List all available prebuilt apps |
-| `--force`, `-f` | Overwrite the target directory if it already exists |
-
-#### Examples
-
+### Examples
 ```bash
-# List available apps
+# List all prebuilt apps
 rhamaa startapp --list
 
-# Force reinstall into target directory
-rhamaa startapp mqtt --prebuild mqtt --force
+# Install with force overwrite
+rhamaa startapp users --prebuild users --force
 ```
 
 ## Listing Available Apps

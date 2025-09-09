@@ -102,7 +102,6 @@ nav:
   - Commands:
     - Project Management: commands/project-management.md
     - App Management: commands/app-management.md
-    - Registry: commands/registry.md
   - Available Apps: apps/index.md
   - Development:
     - Contributing: development/contributing.md

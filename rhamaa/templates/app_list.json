@@ -16,22 +16,8 @@
   "articles": {
     "name": "Article System",
     "description": "Blog and article management",
-    "repository": "https://github.com/RhamaaCMS/articles-app",
+    "repository": "https://github.com/RhamaaCMS/article-apps",
     "branch": "main",
     "category": "Content"
-  },
-  "lms": {
-    "name": "Learning Management System",
-    "description": "Complete LMS with courses and lessons",
-    "repository": "https://github.com/RhamaaCMS/lms-app",
-    "branch": "main",
-    "category": "Education"
-  },
-  "ecommerce": {
-    "name": "E-Commerce System",
-    "description": "Online store with products and orders",
-    "repository": "https://github.com/RhamaaCMS/ecommerce-app",
-    "branch": "main",
-    "category": "Commerce"
   }
 }

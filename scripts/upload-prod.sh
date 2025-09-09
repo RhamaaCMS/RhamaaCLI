@@ -26,4 +26,4 @@ python -m twine upload dist/*
 echo "✅ Upload to Production PyPI completed!"
 echo ""
 echo "To install:"
-echo "  pip install rhamaa==0.1.0b1"
+echo "  pip install rhamaa==0.3.0"

@@ -1,112 +1,58 @@
 # Quick Start
 
-Get up and running with Rhamaa CLI in minutes! This guide will walk you through creating your first Wagtail project and adding prebuilt applications.
+Get started with Rhamaa CLI in 5 minutes.
 
-## Step 1: Create Your First Project
-
-Create a new Wagtail project using the RhamaaCMS template:
+## 1. Create Project
 
 ```bash
 rhamaa start MyBlog
-```
-
-This command will:
-
-- Download the RhamaaCMS template
-- Create a new directory called `MyBlog`
-- Set up the basic Wagtail project structure
-- Configure initial settings and dependencies
-
-!!! success "Project Created!"
-    You should see a success message with the Rhamaa CLI logo and confirmation that your project was created.
-
-## Step 2: Navigate to Your Project
-
-```bash
 cd MyBlog
 ```
 
-## Step 3: Set Up Your Environment
-
-Create and activate a virtual environment:
+## 2. Setup Environment
 
 ```bash
-# Create virtual environment
 python -m venv .venv
-
-# Activate it
-# On Linux/Mac:
-source .venv/bin/activate
-# On Windows:
-# .venv\Scripts\activate
-
-# Install dependencies
+source .venv/bin/activate  # Linux/Mac
 pip install -r requirements.txt
 ```
 
-## Step 4: Explore Available Apps
-
-See what prebuilt applications are available:
+## 3. List Available Apps
 
 ```bash
 rhamaa startapp --list
 ```
 
-You'll see a table showing available apps like:
-
-- **mqtt** - IoT MQTT integration
-- **users** - Advanced user management
-- **articles** - Blog and article system
-- **lms** - Learning Management System
-
-## Step 5: Add Your First App
-
-Let's add the articles app for blog functionality:
+## 4. Install Prebuilt App
 
 ```bash
 rhamaa startapp articles --prebuild articles
 ```
 
-This will:
+## 5. Configure App
 
-- Download the articles app from GitHub
-- Extract it to your `apps/` directory (apps/articles)
-- Show you next steps for configuration
-
-## Step 6: Configure the App
-
-Follow the instructions shown after installation:
-
-1. **Add to INSTALLED_APPS** in your settings:
-
+Add to `settings.py`:
 ```python
-# settings/base.py or settings.py
 INSTALLED_APPS = [
     # ... existing apps
-    'apps.articles',  # Add this line (matches apps/<name>)
+    'apps.articles',
 ]
 ```
 
-2. **Run migrations**:
-
+Run migrations:
 ```bash
 python manage.py makemigrations
 python manage.py migrate
-```
-
-3. **Create a superuser**:
-
-```bash
 python manage.py createsuperuser
 ```
 
-## Step 7: Start Development Server
+## 6. Start Server
 
 ```bash
 python manage.py runserver
 ```
 
-Visit `http://127.0.0.1:8000/admin/` to access the Wagtail admin interface.
+Visit `http://127.0.0.1:8000/admin/`
 
 ## What's Next?
 

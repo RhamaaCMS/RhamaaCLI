@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "rhamaa"
-version = "0.2.0b1"
+version = "0.3.0"
 description = "CLI tools to accelerate Wagtail web development with RhamaaCMS"
 readme = "README.md"
 license = {text = "MIT"}

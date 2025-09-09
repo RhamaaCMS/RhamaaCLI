@@ -15,6 +15,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dependency resolution
 - Configuration templates
 
+## [0.3.0] - 2025-09-09
+
+### Added
+- JSON-based app registry in `rhamaa/templates/app_list.json`
+- New prebuilt apps: `lms` and `ecommerce`
+- Categorized app display in `--list` command
+- Enhanced error handling for registry loading
+
+### Changed
+- **BREAKING**: Consolidated all functionality into `startapp` command
+- **BREAKING**: Default app type changed from `wagtail` to `minimal`
+- All apps now created in `apps/` directory by default
+- Simplified command structure (only `start` and `startapp`)
+- Updated documentation to be more concise and focused
+
+### Removed
+- **BREAKING**: `rhamaa registry` command group (use `startapp --list`)
+- **BREAKING**: `rhamaa add` command (use `startapp --prebuild`)
+- Deprecated registry.py and commands/registry.py files
+- Deprecated commands/add.py file
+
+### Fixed
+- Apps.py configuration now correctly uses `apps.{app_name}` format
+- JSON registry loading with proper error handling
+- Package data configuration for JSON files
+
+### Technical
+- Migrated from hardcoded registry to JSON file
+- Improved package structure and data inclusion
+- Updated version to 0.3.0 for stable release
+
 ## [0.2.0b1] - 2025-09-07
 
 ### Added

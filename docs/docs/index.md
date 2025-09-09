@@ -2,53 +2,56 @@
 
 <div align="center">
   <h2>🚀 Accelerate your Wagtail development</h2>
-  <p>A powerful CLI tool for rapid Wagtail CMS development with prebuilt applications and project scaffolding.</p>
+  <p>Simple CLI tool for Wagtail CMS development with prebuilt apps and project scaffolding.</p>
 </div>
 
 ## What is Rhamaa CLI?
 
-Rhamaa CLI is a command-line tool designed to streamline Wagtail web development by providing:
+Rhamaa CLI streamlines Wagtail development with:
 
-- **Quick Project Setup** - Generate new Wagtail projects using the RhamaaCMS template
-- **Prebuilt Applications** - Install ready-to-use apps for common use cases
-- **App Registry** - Centralized catalog of available applications
-- **Developer Experience** - Beautiful terminal interface with progress indicators
+- **Quick Project Setup** - Generate Wagtail projects instantly
+- **Prebuilt Apps** - Install ready-to-use applications
+- **Simple Commands** - Just two main commands to remember
+- **Rich UI** - Beautiful terminal interface
 
-## Key Features
+## Core Commands
 
-### 🏗️ Project Management
-- Create new Wagtail projects with a single command
-- Use the proven RhamaaCMS template structure
-- Automatic project validation and setup
+### `rhamaa start <project>`
+Create new Wagtail project with RhamaaCMS template.
 
-### 📦 App Ecosystem
-- **IoT/MQTT** - Real-time messaging and device management
-- **User Management** - Advanced authentication and user profiles
-- **Content Management** - Blog and article systems
-- **Learning Management** - Complete LMS solution
+### `rhamaa startapp <name>`
+Create Django apps or install prebuilt apps.
 
-### 🎨 Developer Experience
-- Rich terminal UI with ASCII art branding
-- Real-time progress indicators for downloads
-- Comprehensive error handling and troubleshooting
-- Intuitive command structure
-
-## Quick Example
+## Quick Start
 
 ```bash
-# Install Rhamaa CLI
+# Install
 pip install rhamaa
 
-# Create a new project
+# Create project
 rhamaa start MyProject
-
-# Add IoT capabilities
 cd MyProject
-rhamaa add mqtt
 
-# List available apps
-rhamaa registry list
+# Create minimal app
+rhamaa startapp blog
+
+# Create Wagtail app
+rhamaa startapp pages --type wagtail
+
+# Install prebuilt app
+rhamaa startapp iot --prebuild mqtt
+
+# List available prebuilt apps
+rhamaa startapp --list
 ```
+
+## Available Prebuilt Apps
+
+- **mqtt** - IoT MQTT integration
+- **users** - User management system  
+- **articles** - Blog and content management
+- **lms** - Learning management system
+- **ecommerce** - E-commerce functionality
 
 ## Target Users
 

@@ -1,65 +1,35 @@
 # Installation
 
-This guide will help you install Rhamaa CLI on your system.
-
 ## Prerequisites
 
-Before installing Rhamaa CLI, make sure you have:
-
-- **Python 3.7+** installed on your system
+- **Python 3.7+**
 - **pip** package manager
-- **Wagtail** installed (for creating projects)
 
-!!! tip "Check Python Version"
-    ```bash
-    python --version
-    # or
-    python3 --version
-    ```
-
-## Installation Methods
-
-### Method 1: Install from PyPI (Recommended)
-
-Install the latest stable version from PyPI:
+## Install from PyPI
 
 ```bash
 pip install rhamaa
 ```
 
-For the latest pre-release version:
+## Verify Installation
 
 ```bash
-pip install --pre rhamaa
+rhamaa --help
 ```
 
-### Method 2: Install Specific Version
+You should see the Rhamaa CLI logo and available commands.
 
-Install a specific version:
+## Install Wagtail (Required for projects)
 
 ```bash
-pip install rhamaa==0.1.0b1
+pip install wagtail
 ```
 
-### Method 3: Development Installation
-
-For development or to get the latest features:
+## Development Installation
 
 ```bash
-# Clone the repository
 git clone https://github.com/RhamaaCMS/RhamaaCLI.git
 cd RhamaaCLI
-
-# Create virtual environment
-python -m venv .venv
-
-# Activate virtual environment
-# On Linux/Mac:
-source .venv/bin/activate
-# On Windows:
-# .venv\Scripts\activate
-
-# Install in development mode
 pip install -e .
 ```
 
