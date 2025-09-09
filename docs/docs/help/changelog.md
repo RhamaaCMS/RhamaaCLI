@@ -15,6 +15,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dependency resolution
 - Configuration templates
 
+## [0.3.1] - 2025-09-09
+
+### Fixed
+- Package deployment configuration for PyPI
+- Updated README.md with current functionality and simplified examples
+- Improved documentation structure and clarity
+
+### Changed
+- Enhanced package metadata for better PyPI presentation
+- Streamlined getting started documentation
+
+### Technical
+- Fixed PyPI deployment process
+- Updated version references across all files
+- Improved package distribution configuration
+
 ## [0.3.0] - 2025-09-09
 
 ### Added
