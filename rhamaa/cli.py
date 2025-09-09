@@ -44,9 +44,9 @@ ASCII_LOGO = '''\
 
 HELP_COMMANDS = [
     ("start <ProjectName>", "[green]Create a new Wagtail project[/green]"),
-    ("startapp <AppName>", "[yellow]Create a new Django app (types: wagtail|minimal)[/yellow]"),
-    ("startapp --list", "[blue]List available prebuilt apps from registry[/blue]"),
-    ("startapp <AppName> --prebuild <key>", "[cyan]Install a prebuilt app into apps/<AppName>[/cyan]"),
+    ("startapp <AppName>", "[yellow]Create a new Django app (minimal or wagtail)[/yellow]"),
+    ("startapp --list", "[blue]List available prebuilt apps[/blue]"),
+    ("startapp <AppName> --prebuild <key>", "[cyan]Install prebuilt app (mqtt, users, articles)[/cyan]"),
     ("help", "[magenta]Show this help message[/magenta]")
 ]
 

@@ -1,156 +1,79 @@
 import click
-import os
+import subprocess
 from pathlib import Path
 import pkgutil
-from importlib import resources
 from rich.console import Console
 from rich.panel import Panel
-from rich import box
-from rhamaa.registry import get_app_info, is_app_available
-from rhamaa.utils import download_github_repo, extract_repo_to_apps, check_wagtail_project
 from rich.table import Table
-from rich import box as rich_box
-from rhamaa.registry import list_available_apps
+from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
+from rich import box
+from rhamaa.utils import download_github_repo, extract_repo_to_apps, check_wagtail_project
 
 console = Console()
 
+# Registry of available prebuilt apps
+APP_REGISTRY = {
+    "mqtt": {
+        "name": "MQTT Apps",
+        "description": "IoT MQTT integration for Wagtail",
+        "repository": "https://github.com/RhamaaCMS/mqtt-apps",
+        "branch": "main",
+        "category": "IoT"
+    },
+    "users": {
+        "name": "User Management",
+        "description": "Advanced user management system",
+        "repository": "https://github.com/RhamaaCMS/user-apps",
+        "branch": "main",
+        "category": "Authentication"
+    },
+    "articles": {
+        "name": "Article System",
+        "description": "Blog and article management",
+        "repository": "https://github.com/RhamaaCMS/articles-app",
+        "branch": "main",
+        "category": "Content"
+    }
+}
+
+def get_app_info(app_name):
+    """Get information about a specific app."""
+    return APP_REGISTRY.get(app_name.lower())
+
+def is_app_available(app_name):
+    """Check if an app is available in the registry."""
+    return app_name.lower() in APP_REGISTRY
 
 @click.command()
 @click.argument('app_name', required=False)
-@click.option('--path', '-p', default='apps', help='Directory to create the app in (default: apps)')
-@click.option('--type', 'app_type', type=click.Choice(['wagtail', 'minimal']), default='wagtail', show_default=True, help='App template type')
-@click.option('--prebuild', type=str, default=None, help='Install a prebuilt app from registry (e.g. blog, users) into the given app_name directory')
-@click.option('--list', 'list_apps', is_flag=True, help='List available prebuilt apps from registry')
-@click.option('--force', '-f', is_flag=True, help='Overwrite existing directory when using --prebuild')
-def startapp(app_name, path, app_type, prebuild, list_apps, force):
-    """Create a new Django app with RhamaaCMS structure."""
-
-    # List available registry apps and exit
+@click.option('--type', 'app_type', type=click.Choice(['minimal', 'wagtail']), default='minimal', show_default=True, help='App template type')
+@click.option('--prebuild', type=str, default=None, help='Install a prebuilt app from registry (mqtt, users, articles)')
+@click.option('--list', 'list_apps', is_flag=True, help='List available prebuilt apps')
+@click.option('--force', '-f', is_flag=True, help='Overwrite existing app')
+def startapp(app_name, app_type, prebuild, list_apps, force):
+    """Create a new Django app or install prebuilt app."""
+    
+    # Show available apps
     if list_apps:
         show_available_apps()
         return
-
+    
     if not app_name:
-        console.print(Panel(
-            "[red]Error:[/red] Please provide an app name, e.g. [cyan]rhamaa startapp blog[/cyan]",
-            title="[red]Missing App Name[/red]",
-            expand=False
-        ))
+        console.print("[red]Error:[/red] Please provide an app name")
         return
-
+    
     # Validate app name
     if not app_name.isidentifier():
-        console.print(Panel(
-            f"[red]Error:[/red] '[bold]{app_name}[/bold]' is not a valid Python identifier.\n"
-            "App names should only contain letters, numbers, and underscores, and cannot start with a number.",
-            title="[red]Invalid App Name[/red]",
-            expand=False
-        ))
+        console.print(f"[red]Error:[/red] '{app_name}' is not a valid Python identifier")
         return
-
-    # Create app directory
-    app_dir = Path(path) / app_name
-
-    if app_dir.exists() and not prebuild:
-        console.print(Panel(
-            f"[yellow]Warning:[/yellow] Directory '[bold]{app_dir}[/bold]' already exists.\n"
-            "Please choose a different app name or remove the existing directory.",
-            title="[yellow]Directory Exists[/yellow]",
-            expand=False
-        ))
-        return
-
-    # If --prebuild provided, install registry app into apps/<app_name>
+    
+    # Handle prebuilt app installation
     if prebuild:
-        # Check project validity (heuristic)
-        if not check_wagtail_project():
-            console.print(Panel(
-                "[yellow]Note:[/yellow] Could not verify a Wagtail project in current directory. Continuing anyway...",
-                title="[yellow]Project Check[/yellow]",
-                expand=False
-            ))
-
-        # Validate registry key
-        if not is_app_available(prebuild):
-            console.print(Panel(
-                f"[red]Error:[/red] Prebuilt app '[bold]{prebuild}[/bold]' not found in registry.\n"
-                f"Use [cyan]rhamaa startapp --list[/cyan] to see available apps.",
-                title="[red]App Not Found[/red]",
-                expand=False
-            ))
-            return
-
-        # If target exists and not force, warn
-        if app_dir.exists() and not force:
-            console.print(Panel(
-                f"[yellow]Warning:[/yellow] Target directory '[bold]{app_dir}[/bold]' already exists.\n"
-                f"Use [cyan]--force[/cyan] to overwrite.",
-                title="[yellow]Directory Exists[/yellow]",
-                expand=False
-            ))
-            return
-
-        app_info = get_app_info(prebuild)
-        console.print(Panel(
-            f"[bold cyan]{app_info['name']}[/bold cyan]\n"
-            f"[dim]{app_info['description']}[/dim]\n"
-            f"Repository: [blue]{app_info['repository']}[/blue]\n"
-            f"Branch: [yellow]{app_info['branch']}[/yellow]",
-            title=f"[cyan]Installing prebuilt: {prebuild} -> {app_name}[/cyan]",
-            expand=False
-        ))
-
-        # Download and extract into apps/<app_name>
-        zip_path = download_github_repo(app_info['repository'], app_info['branch'])
-        if not zip_path:
-            console.print(Panel(
-                "[red]Failed to download repository.[/red]",
-                title="[red]Download Failed[/red]",
-                expand=False
-            ))
-            return
-        success = extract_repo_to_apps(zip_path, app_name)
-        if not success:
-            console.print(Panel(
-                "[red]Failed to extract and install the app.[/red]",
-                title="[red]Installation Failed[/red]",
-                expand=False
-            ))
-            return
-
-        console.print(Panel(
-            f"[green]✓[/green] Successfully installed prebuilt app to '[bold]{app_dir}[/bold]'\n"
-            f"Next steps:\n"
-            f"1. Add '[cyan]{app_name}[/cyan]' to your INSTALLED_APPS\n"
-            f"2. Run migrations",
-            title="[green]Prebuilt Installation Successful[/green]",
-            expand=False
-        ))
+        install_prebuilt_app(app_name, prebuild, force)
         return
-
-    # Otherwise, generate scaffold using selected template type
-    console.print(Panel(
-        f"[cyan]Creating new app:[/cyan] [bold]{app_name}[/bold]\n"
-        f"[dim]Location:[/dim] [blue]{app_dir}[/blue]\n"
-        f"Template: [yellow]{app_type}[/yellow]",
-        title="[cyan]RhamaaCMS App Generator[/cyan]",
-        expand=False
-    ))
-
-    # Create app directory structure
-    create_app_structure(app_dir, app_name, app_type)
-
-    console.print(Panel(
-        f"[green]✓[/green] Successfully created '[bold]{app_name}[/bold]' app!\n\n"
-        f"[dim]App location:[/dim] [cyan]{app_dir}[/cyan]\n"
-        f"[dim]Next steps:[/dim]\n"
-        f"1. The app will be auto-discovered by RhamaaCMS\n"
-        f"2. Run migrations: [cyan]python manage.py makemigrations {app_name}[/cyan]\n"
-        f"3. Run: [cyan]python manage.py migrate[/cyan]\n"
-        f"4. Start developing your models, views, and templates!",
-        title="[green]App Created Successfully[/green]",
-        expand=False
-    ))
+    
+    # Create standard Django app
+    create_standard_app(app_name, app_type, force)
 
 def _render_template(content: str, context: dict) -> str:
     """Very small placeholder renderer using {{var}} tokens."""
@@ -177,33 +100,25 @@ def _write_from_template(rel_template_path: str, dest_path: Path, context: dict)
 
 
 def create_app_structure(app_dir, app_name, app_type='wagtail'):
-    """Create the complete app directory structure with RhamaaCMS templates."""
-
+    """Create Wagtail app structure with templates."""
+    
     # Create main directory
     app_dir.mkdir(parents=True, exist_ok=True)
-
+    
     # Create subdirectories
-    subdirs = ['migrations', 'templates', 'static',
-               'management', 'management/commands']
+    subdirs = ['migrations', 'templates', 'static', 'management', 'management/commands']
     for subdir in subdirs:
         (app_dir / subdir).mkdir(parents=True, exist_ok=True)
-
+    
     # Create templates subdirectory for the app
     (app_dir / 'templates' / app_name).mkdir(parents=True, exist_ok=True)
-
+    
     # Create __init__.py files
-    init_files = [
-        '',
-        'migrations',
-        'management',
-        'management/commands'
-    ]
-
+    init_files = ['', 'migrations', 'management', 'management/commands']
     for init_path in init_files:
-        init_file = app_dir / init_path / \
-            '__init__.py' if init_path else app_dir / '__init__.py'
+        init_file = app_dir / init_path / '__init__.py' if init_path else app_dir / '__init__.py'
         init_file.touch()
-
+    
     # Context for templates
     context = {
         'app_name': app_name,
@@ -213,11 +128,9 @@ def create_app_structure(app_dir, app_name, app_type='wagtail'):
         'app_name_upper': app_name.upper(),
         'app_class_name': app_name.title().replace('_', ''),
     }
-
-    # Choose template prefix based on type
-    prefix = 'minimal/' if app_type == 'minimal' else 'wagtail/'
-
-    # Create app files with templates
+    
+    # Create app files with Wagtail templates
+    prefix = 'wagtail/'
     create_apps_py(app_dir, app_name, context, prefix)
     create_models_py(app_dir, app_name, context, prefix)
     create_views_py(app_dir, app_name, context, prefix)
@@ -282,28 +195,110 @@ def create_template_files(app_dir, app_name, context, prefix=''):
 
 
 def show_available_apps():
-    """Display all available apps in a formatted table (inline to avoid add dependency)."""
-    apps = list_available_apps()
-
+    """Display available prebuilt apps."""
     console.print(Panel(
         "[bold cyan]Available Prebuilt Apps[/bold cyan]\n"
-        "[dim]Use 'rhamaa startapp <app_name> --prebuild <registry_key>' to install an app[/dim]",
+        "[dim]Use: rhamaa startapp <app_name> --prebuild <key>[/dim]",
         expand=False
     ))
-
-    table = Table(show_header=True, header_style="bold blue", box=rich_box.ROUNDED)
+    
+    table = Table(show_header=True, header_style="bold blue", box=box.ROUNDED)
     table.add_column("Key", style="bold cyan", width=12)
-    table.add_column("Name", style="white", width=25)
-    table.add_column("Description", style="white", min_width=30)
+    table.add_column("Name", style="white", width=20)
+    table.add_column("Description", style="dim", min_width=30)
     table.add_column("Category", style="green", width=15)
-
-    for app_key, app_info in apps.items():
-        table.add_row(
-            app_key,
-            app_info.get('name', ''),
-            app_info.get('description', ''),
-            app_info.get('category', '')
-        )
-
+    
+    for key, info in APP_REGISTRY.items():
+        table.add_row(key, info['name'], info['description'], info['category'])
+    
     console.print(table)
-    console.print(f"\n[dim]Total: {len(apps)} apps available[/dim]")
+
+def install_prebuilt_app(app_name, prebuild_key, force):
+    """Install a prebuilt app from registry."""
+    if not is_app_available(prebuild_key):
+        console.print(f"[red]Error:[/red] Prebuilt app '{prebuild_key}' not found")
+        console.print("Use [cyan]rhamaa startapp --list[/cyan] to see available apps")
+        return
+    
+    app_dir = Path("apps") / app_name
+    if app_dir.exists() and not force:
+        console.print(f"[yellow]Warning:[/yellow] App '{app_name}' already exists. Use --force to overwrite")
+        return
+    
+    app_info = get_app_info(prebuild_key)
+    console.print(f"[cyan]Installing {app_info['name']} as '{app_name}'...[/cyan]")
+    
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TaskProgressColumn(),
+        console=console
+    ) as progress:
+        
+        download_task = progress.add_task("Downloading...", total=100)
+        zip_path = download_github_repo(
+            app_info['repository'], 
+            app_info['branch'], 
+            progress, 
+            download_task
+        )
+        
+        if not zip_path:
+            console.print("[red]Failed to download repository[/red]")
+            return
+        
+        extract_task = progress.add_task("Extracting...", total=100)
+        success = extract_repo_to_apps(zip_path, app_name, progress, extract_task)
+        
+        if success:
+            console.print(f"[green]✓[/green] Successfully installed 'apps/{app_name}'")
+            console.print(f"[dim]Next steps:[/dim]")
+            console.print(f"1. Add 'apps.{app_name}' to INSTALLED_APPS")
+            console.print(f"2. Run: python manage.py makemigrations && python manage.py migrate")
+        else:
+            console.print("[red]Failed to install app[/red]")
+
+def create_standard_app(app_name, app_type, force):
+    """Create a standard Django app in apps/ directory."""
+    # Ensure apps directory exists
+    apps_dir = Path("apps")
+    apps_dir.mkdir(exist_ok=True)
+    
+    app_dir = apps_dir / app_name
+    
+    if app_dir.exists() and not force:
+        console.print(f"[yellow]Warning:[/yellow] Directory 'apps/{app_name}' already exists")
+        return
+    
+    if app_type == 'minimal':
+        # Create minimal Django app in apps/ directory
+        console.print(f"[cyan]Creating minimal Django app: apps/{app_name}[/cyan]")
+        try:
+            # Create the app directory first
+            app_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Use django-admin to create app in the apps directory
+            subprocess.run(['django-admin', 'startapp', app_name, str(app_dir)], check=True)
+            console.print(f"[green]✓[/green] Created 'apps/{app_name}' app")
+            
+            # Update apps.py to use correct app name path
+            apps_py_path = app_dir / 'apps.py'
+            if apps_py_path.exists():
+                content = apps_py_path.read_text()
+                # Replace the name to include apps. prefix
+                updated_content = content.replace(
+                    f"name = '{app_name}'",
+                    f"name = 'apps.{app_name}'"
+                )
+                apps_py_path.write_text(updated_content)
+                
+        except subprocess.CalledProcessError:
+            console.print("[red]Error:[/red] Failed to create app. Make sure Django is installed")
+        except FileNotFoundError:
+            console.print("[red]Error:[/red] django-admin not found. Make sure Django is installed")
+    else:
+        # Create Wagtail-style app with templates
+        console.print(f"[cyan]Creating Wagtail app: apps/{app_name}[/cyan]")
+        create_app_structure(app_dir, app_name, app_type)
+        console.print(f"[green]✓[/green] Created 'apps/{app_name}' app with Wagtail structure")
