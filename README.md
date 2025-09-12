@@ -5,8 +5,14 @@ Simple CLI tool for Wagtail CMS development. Create projects and install prebuil
 ## ⚡ Quick Start
 
 ```bash
-# Install
+# Basic install (CLI only)
 pip install rhamaa
+
+# With CMS support (includes Wagtail)
+pip install "rhamaa[cms]"
+
+# With Computer Vision support
+pip install "rhamaa[cv]"
 
 # Create Wagtail project
 rhamaa start MyProject

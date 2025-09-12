@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="rhamaa",
-    version="0.3.1",
+    version="0.4.0",
     description="CLI tools to accelerate Wagtail web development with RhamaaCMS.",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -42,6 +42,13 @@ setup(
         "gitpython>=3.1.0",
     ],
     extras_require={
+        "cms": [
+            "wagtail>=5.0",
+        ],
+        "cv": [
+            "ultralytics>=8.0.0",
+            "opencv-python>=4.8.0",
+        ],
         "dev": [
             "pytest>=6.0",
             "pytest-cov",
