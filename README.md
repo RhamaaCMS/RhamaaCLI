@@ -8,37 +8,44 @@ Simple CLI tool for Wagtail CMS development. Create projects and install prebuil
 # Basic install (CLI only)
 pip install rhamaa
 
-# With CMS support (includes Wagtail)
+# With CMS support (includes Wagtail) - Recommended
 pip install "rhamaa[cms]"
 
 # With Computer Vision support
 pip install "rhamaa[cv]"
 
 # Create Wagtail project
-rhamaa start MyProject
+rhamaa cms start MyProject
 cd MyProject
 
 # Create minimal Django app
-rhamaa startapp blog
+rhamaa cms startapp blog
 
 # Install prebuilt app
-rhamaa startapp iot --prebuild mqtt
+rhamaa cms startapp iot --prebuild mqtt
 
 # List available apps
-rhamaa startapp --list
+rhamaa cms startapp --list
 ```
 
-## 🎯 Two Simple Commands
+## 🎯 CMS-Focused Commands
 
-### `rhamaa start <project>`
+### `rhamaa cms start <project>`
 Creates new Wagtail project using RhamaaCMS template.
 
-### `rhamaa startapp <name>`
+### `rhamaa cms startapp <name>`
 Creates Django apps or installs prebuilt apps:
 - `--type minimal` - Standard Django app (default)
 - `--type wagtail` - Wagtail app with models/templates
 - `--prebuild <key>` - Install from registry
 - `--list` - Show available prebuilt apps
+
+### `rhamaa cms run`
+Development and production server management:
+- `rhamaa cms run` - Start development server
+- `rhamaa cms run --prod` - Start with Gunicorn
+- `rhamaa cms check` - Run system checks
+- `rhamaa cms status` - Show project status
 
 ## 📦 Available Prebuilt Apps
 
@@ -52,19 +59,19 @@ Creates Django apps or installs prebuilt apps:
 
 ```bash
 # Blog project
-rhamaa start MyBlog
+rhamaa cms start MyBlog
 cd MyBlog
-rhamaa startapp articles --prebuild articles
+rhamaa cms startapp articles --prebuild articles
 
 # IoT dashboard
-rhamaa start IoTDash
+rhamaa cms start IoTDash
 cd IoTDash
-rhamaa startapp devices --prebuild mqtt
+rhamaa cms startapp devices --prebuild mqtt
 
 # Educational platform
-rhamaa start EduSite
+rhamaa cms start EduSite
 cd EduSite
-rhamaa startapp courses --prebuild lms
+rhamaa cms startapp courses --prebuild lms
 ```
 
 ## 🔧 After Installing Apps

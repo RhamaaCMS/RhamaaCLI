@@ -1,8 +1,8 @@
 import click
 import subprocess
 import json
-from pathlib import Path
 import pkgutil
+from pathlib import Path
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
@@ -65,125 +65,6 @@ def startapp(app_name, app_type, prebuild, list_apps, force):
     # Create standard Django app
     create_standard_app(app_name, app_type, force)
 
-def _render_template(content: str, context: dict) -> str:
-    """Very small placeholder renderer using {{var}} tokens."""
-    rendered = content
-    for key, value in context.items():
-        rendered = rendered.replace(f"{{{{{key}}}}}", str(value))
-    return rendered
-
-
-def _read_template(rel_path: str) -> str:
-    """Read template file from rhamaa/templates/APPS_TEMPLATES using pkgutil for broad Py support."""
-    pkg = 'rhamaa.templates.APPS_TEMPLATES'
-    data = pkgutil.get_data(pkg, rel_path)
-    if data is None:
-        raise FileNotFoundError(f"Template not found: {rel_path}")
-    return data.decode('utf-8')
-
-
-def _write_from_template(rel_template_path: str, dest_path: Path, context: dict):
-    content = _read_template(rel_template_path)
-    rendered = _render_template(content, context)
-    dest_path.parent.mkdir(parents=True, exist_ok=True)
-    dest_path.write_text(rendered, encoding='utf-8')
-
-
-def create_app_structure(app_dir, app_name, app_type='wagtail'):
-    """Create Wagtail app structure with templates."""
-    
-    # Create main directory
-    app_dir.mkdir(parents=True, exist_ok=True)
-    
-    # Create subdirectories
-    subdirs = ['migrations', 'templates', 'static', 'management', 'management/commands']
-    for subdir in subdirs:
-        (app_dir / subdir).mkdir(parents=True, exist_ok=True)
-    
-    # Create templates subdirectory for the app
-    (app_dir / 'templates' / app_name).mkdir(parents=True, exist_ok=True)
-    
-    # Create __init__.py files
-    init_files = ['', 'migrations', 'management', 'management/commands']
-    for init_path in init_files:
-        init_file = app_dir / init_path / '__init__.py' if init_path else app_dir / '__init__.py'
-        init_file.touch()
-    
-    # Context for templates
-    context = {
-        'app_name': app_name,
-        'app_title': app_name.replace('_', ' ').title(),
-        'app_verbose_name': app_name.replace('_', ' ').title(),
-        'app_config_class': f"{app_name.title().replace('_', '')}Config",
-        'app_name_upper': app_name.upper(),
-        'app_class_name': app_name.title().replace('_', ''),
-    }
-    
-    # Create app files with Wagtail templates
-    prefix = 'wagtail/'
-    create_apps_py(app_dir, app_name, context, prefix)
-    create_models_py(app_dir, app_name, context, prefix)
-    create_views_py(app_dir, app_name, context, prefix)
-    create_admin_py(app_dir, app_name, context, prefix)
-    create_urls_py(app_dir, app_name, context, prefix)
-    create_settings_py(app_dir, app_name, context, prefix)
-    create_tests_py(app_dir, app_name, context, prefix)
-    create_initial_migration(app_dir, context, prefix)
-    create_template_files(app_dir, app_name, context, prefix)
-
-
-def create_apps_py(app_dir, app_name, context, prefix=''):
-    """Create apps.py with RhamaaCMS configuration from template."""
-    _write_from_template(f'{prefix}apps.py.tpl', app_dir / 'apps.py', context)
-
-
-def create_models_py(app_dir, app_name, context, prefix=''):
-    """Create models.py from template."""
-    _write_from_template(f'{prefix}models.py.tpl', app_dir / 'models.py', context)
-
-
-def create_views_py(app_dir, app_name, context, prefix=''):
-    """Create views.py from template."""
-    _write_from_template(f'{prefix}views.py.tpl', app_dir / 'views.py', context)
-
-
-def create_admin_py(app_dir, app_name, context, prefix=''):
-    """Create admin.py from template."""
-    _write_from_template(f'{prefix}admin.py.tpl', app_dir / 'admin.py', context)
-
-
-def create_urls_py(app_dir, app_name, context, prefix=''):
-    """Create urls.py for the app from template."""
-    _write_from_template(f'{prefix}urls.py.tpl', app_dir / 'urls.py', context)
-
-
-def create_settings_py(app_dir, app_name, context, prefix=''):
-    """Create settings.py from template."""
-    _write_from_template(f'{prefix}settings.py.tpl', app_dir / 'settings.py', context)
-
-
-def create_tests_py(app_dir, app_name, context, prefix=''):
-    """Create tests.py from template."""
-    _write_from_template(f'{prefix}tests.py.tpl', app_dir / 'tests.py', context)
-
-
-def create_initial_migration(app_dir, context, prefix=''):
-    """Create initial migration file from template."""
-    # Minimal template might not include migrations; guard safely
-    try:
-        _write_from_template(f'{prefix}migrations/0001_initial.py.tpl', app_dir / 'migrations' / '0001_initial.py', context)
-    except FileNotFoundError:
-        pass
-
-
-def create_template_files(app_dir, app_name, context, prefix=''):
-    """Create template files for the app from .tpl files."""
-    # HTML template files are only for wagtail type
-    if prefix == 'wagtail/':
-        _write_from_template('wagtail/templates/index.html.tpl', app_dir / 'templates' / app_name / 'index.html', context)
-        _write_from_template('wagtail/templates/example_page.html.tpl', app_dir / 'templates' / app_name / 'example_page.html', context)
-
-
 def show_available_apps():
     """Display available prebuilt apps."""
     registry = load_app_registry()
@@ -194,7 +75,7 @@ def show_available_apps():
     
     console.print(Panel(
         "[bold cyan]Available Prebuilt Apps[/bold cyan]\n"
-        "[dim]Use: rhamaa startapp <app_name> --prebuild <key>[/dim]",
+        "[dim]Use: rhamaa cms startapp <app_name> --prebuild <key>[/dim]",
         expand=False
     ))
     
@@ -226,7 +107,7 @@ def install_prebuilt_app(app_name, prebuild_key, force):
     """Install a prebuilt app from registry."""
     if not is_app_available(prebuild_key):
         console.print(f"[red]Error:[/red] Prebuilt app '{prebuild_key}' not found")
-        console.print("Use [cyan]rhamaa startapp --list[/cyan] to see available apps")
+        console.print("Use [cyan]rhamaa cms startapp --list[/cyan] to see available apps")
         return
     
     app_dir = Path("apps") / app_name
@@ -311,3 +192,108 @@ def create_standard_app(app_name, app_type, force):
         console.print(f"[cyan]Creating Wagtail app: apps/{app_name}[/cyan]")
         create_app_structure(app_dir, app_name, app_type)
         console.print(f"[green]✓[/green] Created 'apps/{app_name}' app with Wagtail structure")
+
+# Template functions (copied from original startapp.py)
+def _render_template(content: str, context: dict) -> str:
+    """Very small placeholder renderer using {{var}} tokens."""
+    rendered = content
+    for key, value in context.items():
+        rendered = rendered.replace(f"{{{{{key}}}}}", str(value))
+    return rendered
+
+def _read_template(rel_path: str) -> str:
+    """Read template file from rhamaa/templates/APPS_TEMPLATES using pkgutil for broad Py support."""
+    pkg = 'rhamaa.templates.APPS_TEMPLATES'
+    data = pkgutil.get_data(pkg, rel_path)
+    if data is None:
+        raise FileNotFoundError(f"Template not found: {rel_path}")
+    return data.decode('utf-8')
+
+def _write_from_template(rel_template_path: str, dest_path: Path, context: dict):
+    content = _read_template(rel_template_path)
+    rendered = _render_template(content, context)
+    dest_path.parent.mkdir(parents=True, exist_ok=True)
+    dest_path.write_text(rendered, encoding='utf-8')
+
+def create_app_structure(app_dir, app_name, app_type='wagtail'):
+    """Create Wagtail app structure with templates."""
+    
+    # Create main directory
+    app_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Create subdirectories
+    subdirs = ['migrations', 'templates', 'static', 'management', 'management/commands']
+    for subdir in subdirs:
+        (app_dir / subdir).mkdir(parents=True, exist_ok=True)
+    
+    # Create templates subdirectory for the app
+    (app_dir / 'templates' / app_name).mkdir(parents=True, exist_ok=True)
+    
+    # Create __init__.py files
+    init_files = ['', 'migrations', 'management', 'management/commands']
+    for init_path in init_files:
+        init_file = app_dir / init_path / '__init__.py' if init_path else app_dir / '__init__.py'
+        init_file.touch()
+    
+    # Context for templates
+    context = {
+        'app_name': app_name,
+        'app_title': app_name.replace('_', ' ').title(),
+        'app_verbose_name': app_name.replace('_', ' ').title(),
+        'app_config_class': f"{app_name.title().replace('_', '')}Config",
+        'app_name_upper': app_name.upper(),
+        'app_class_name': app_name.title().replace('_', ''),
+    }
+    
+    # Create app files with Wagtail templates
+    prefix = 'wagtail/'
+    create_apps_py(app_dir, app_name, context, prefix)
+    create_models_py(app_dir, app_name, context, prefix)
+    create_views_py(app_dir, app_name, context, prefix)
+    create_admin_py(app_dir, app_name, context, prefix)
+    create_urls_py(app_dir, app_name, context, prefix)
+    create_settings_py(app_dir, app_name, context, prefix)
+    create_tests_py(app_dir, app_name, context, prefix)
+    create_initial_migration(app_dir, context, prefix)
+    create_template_files(app_dir, app_name, context, prefix)
+
+def create_apps_py(app_dir, app_name, context, prefix=''):
+    """Create apps.py with RhamaaCMS configuration from template."""
+    _write_from_template(f'{prefix}apps.py.tpl', app_dir / 'apps.py', context)
+
+def create_models_py(app_dir, app_name, context, prefix=''):
+    """Create models.py from template."""
+    _write_from_template(f'{prefix}models.py.tpl', app_dir / 'models.py', context)
+
+def create_views_py(app_dir, app_name, context, prefix=''):
+    """Create views.py from template."""
+    _write_from_template(f'{prefix}views.py.tpl', app_dir / 'views.py', context)
+
+def create_admin_py(app_dir, app_name, context, prefix=''):
+    """Create admin.py from template."""
+    _write_from_template(f'{prefix}admin.py.tpl', app_dir / 'admin.py', context)
+
+def create_urls_py(app_dir, app_name, context, prefix=''):
+    """Create urls.py for the app from template."""
+    _write_from_template(f'{prefix}urls.py.tpl', app_dir / 'urls.py', context)
+
+def create_settings_py(app_dir, app_name, context, prefix=''):
+    """Create settings.py from template."""
+    _write_from_template(f'{prefix}settings.py.tpl', app_dir / 'settings.py', context)
+
+def create_tests_py(app_dir, app_name, context, prefix=''):
+    """Create tests.py from template."""
+    _write_from_template(f'{prefix}tests.py.tpl', app_dir / 'tests.py', context)
+
+def create_initial_migration(app_dir, context, prefix=''):
+    """Create initial migration file from template."""
+    try:
+        _write_from_template(f'{prefix}migrations/0001_initial.py.tpl', app_dir / 'migrations' / '0001_initial.py', context)
+    except FileNotFoundError:
+        pass
+
+def create_template_files(app_dir, app_name, context, prefix=''):
+    """Create template files for the app from .tpl files."""
+    if prefix == 'wagtail/':
+        _write_from_template('wagtail/templates/index.html.tpl', app_dir / 'templates' / app_name / 'index.html', context)
+        _write_from_template('wagtail/templates/example_page.html.tpl', app_dir / 'templates' / app_name / 'example_page.html', context)

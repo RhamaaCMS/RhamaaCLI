@@ -4,17 +4,17 @@ Rhamaa CLI provides powerful commands for creating and managing Wagtail projects
 
 ## Creating New Projects
 
-### `rhamaa start`
+### `rhamaa cms start`
 
 Create a new Wagtail project using the RhamaaCMS template.
 
 ```bash
-rhamaa start <ProjectName>
+rhamaa cms start <ProjectName>
 ```
 
 **Example:**
 ```bash
-rhamaa start MyBlog
+rhamaa cms start MyBlog
 ```
 
 #### What it does:
@@ -60,17 +60,17 @@ MyProject/
 
 ## Creating Django Apps
 
-### `rhamaa startapp`
+### `rhamaa cms startapp`
 
 Create a new Django app with RhamaaCMS structure within your project.
 
 ```bash
-rhamaa startapp <AppName>
+rhamaa cms startapp <AppName>
 ```
 
 **Example:**
 ```bash
-rhamaa startapp blog
+rhamaa cms startapp blog
 ```
 
 #### Features:
@@ -218,9 +218,10 @@ The template is ready for deployment to:
 After creating your project:
 
 1. **Set Up Environment**: Create virtual environment and install dependencies
-2. **Add Applications**: Use `rhamaa startapp <AppName> --prebuild <key>` to install prebuilt apps (see `rhamaa startapp --list`)
+2. **Add Applications**: Use `rhamaa cms startapp <AppName> --prebuild <key>` to install prebuilt apps (see `rhamaa cms startapp --list`)
 3. **Configure Settings**: Customize settings for your needs
-4. **Run Migrations**: Set up the database
-5. **Create Superuser**: Access the admin interface
+4. **Run Migrations**: `rhamaa cms migrate`
+5. **Create Superuser**: `rhamaa cms createsuperuser`
+6. **Start Server**: `rhamaa cms run`
 
-See the [App Management](app-management.md) section for adding prebuilt applications to your project.
+See the [CMS Commands](app-management.md) section for comprehensive development tools.

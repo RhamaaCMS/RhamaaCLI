@@ -101,6 +101,7 @@ nav:
     - Quick Start: getting-started/quick-start.md
   - Commands:
     - Project Management: commands/project-management.md
+    - CMS Commands: commands/cms-commands.md
     - App Management: commands/app-management.md
   - Available Apps: apps/index.md
   - Development:

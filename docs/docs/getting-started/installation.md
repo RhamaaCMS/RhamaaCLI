@@ -7,8 +7,24 @@
 
 ## Install from PyPI
 
+### Basic Installation
 ```bash
 pip install rhamaa
+```
+
+### With CMS Support (Recommended)
+```bash
+pip install "rhamaa[cms]"
+```
+
+### With Computer Vision Support
+```bash
+pip install "rhamaa[cv]"
+```
+
+### Multiple Extras
+```bash
+pip install "rhamaa[cms,cv]"
 ```
 
 ## Verify Installation
@@ -19,18 +35,12 @@ rhamaa --help
 
 You should see the Rhamaa CLI logo and available commands.
 
-## Install Wagtail (Required for projects)
-
-```bash
-pip install wagtail
-```
-
 ## Development Installation
 
 ```bash
 git clone https://github.com/RhamaaCMS/RhamaaCLI.git
 cd RhamaaCLI
-pip install -e .
+pip install -e ".[cms,dev]"
 ```
 
 ## Verify Installation

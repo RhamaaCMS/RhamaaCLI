@@ -15,6 +15,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dependency resolution
 - Configuration templates
 
+## [0.4.1] - 2025-09-09
+
+### Fixed
+- Package structure for modular CMS commands
+- Import paths for cms command modules
+- Documentation consistency across all files
+
+### Changed
+- Enhanced documentation with comprehensive CMS commands reference
+- Updated MkDocs navigation structure
+- Improved installation guide with extras examples
+
+### Technical
+- Verified all command imports work correctly
+- Updated package metadata for PyPI deployment
+- Comprehensive documentation review and updates
+
+## [0.4.0] - 2025-09-09
+
+### Added
+- **Optional Dependencies (Extras)** - Installation variants
+  - `rhamaa[cms]` - Include Wagtail and CMS dependencies
+  - `rhamaa[cv]` - Computer Vision with Ultralytics and OpenCV
+  - `rhamaa[dev]` - Development tools and testing utilities
+- **Modular CMS Commands** - Organized command structure
+  - `rhamaa cms start` - Project creation
+  - `rhamaa cms startapp` - App creation and prebuilt installation
+  - `rhamaa cms run` - Development and production server
+  - `rhamaa cms migrate` - Database migrations
+  - `rhamaa cms check` - System checks
+  - `rhamaa cms test` - Run tests
+  - `rhamaa cms status` - Project status
+  - `rhamaa cms info` - Detailed project information
+
+### Changed
+- **BREAKING**: All commands moved under `cms` namespace
+  - `rhamaa start` → `rhamaa cms start`
+  - `rhamaa startapp` → `rhamaa cms startapp`
+- **Modular Architecture** - Split cms.py into organized modules
+  - `rhamaa/commands/cms/start.py`
+  - `rhamaa/commands/cms/startapp.py`
+  - `rhamaa/commands/cms/server.py`
+  - `rhamaa/commands/cms/database.py`
+  - `rhamaa/commands/cms/management.py`
+  - `rhamaa/commands/cms/info.py`
+- Removed Wagtail from core dependencies (now in `[cms]` extra)
+
+### Technical
+- Cleaner code organization with separated concerns
+- Better maintainability with modular structure
+- Enhanced error handling and user feedback
+- Comprehensive documentation updates
+
 ## [0.3.1] - 2025-09-09
 
 ### Fixed
