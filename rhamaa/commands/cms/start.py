@@ -83,6 +83,16 @@ def build_github_zip_url(repo_url: str, branch: str) -> str:
     help="Template key defined in project_template_list.json (e.g. base, dev).",
 )
 @click.option(
+    "--template-url",
+    type=str,
+    help="Custom template ZIP URL (overrides --template registry selection).",
+)
+@click.option(
+    "--template-file",
+    type=click.Path(exists=True, path_type=Path),
+    help="Path to local template ZIP or directory (overrides --template registry selection).",
+)
+@click.option(
     "--local-dev",
     is_flag=True,
     help="Use local RhamaaCMS template from ../RhamaaCMS instead of downloading a branch.",
@@ -93,7 +103,7 @@ def build_github_zip_url(repo_url: str, branch: str) -> str:
     is_flag=True,
     help="List available templates and exit.",
 )
-def start(project_name, template_key, local_dev, list_templates):
+def start(project_name, template_key, template_url, template_file, local_dev, list_templates):
     """Create a new Wagtail project using the RhamaaCMS template."""
     if list_templates:
         show_available_templates()
@@ -103,7 +113,42 @@ def start(project_name, template_key, local_dev, list_templates):
         console.print("[red]Error:[/red] Please provide a project name.")
         return
 
-    if local_dev:
+    template_source = None
+
+    if template_file:
+        template_path = template_file.expanduser().resolve()
+        if not template_path.exists():
+            console.print(
+                Panel(
+                    f"[red]Error:[/red] Template file or directory not found: {template_path}",
+                    expand=False,
+                )
+            )
+            return
+        template_source = str(template_path)
+        console.print(
+            Panel(
+                f"[green]Using local template file/directory:[/green] {template_path}",
+                expand=False,
+            )
+        )
+    elif template_url:
+        if not template_url.lower().startswith(("http://", "https://")):
+            console.print(
+                Panel(
+                    "[red]Error:[/red] Template URL must start with http:// or https://",
+                    expand=False,
+                )
+            )
+            return
+        template_source = template_url
+        console.print(
+            Panel(
+                f"[green]Using custom template URL:[/green]\n[dim]{template_url}[/dim]",
+                expand=False,
+            )
+        )
+    elif local_dev:
         template_source = DEFAULT_LOCAL_TEMPLATE
         if not template_source.exists():
             console.print(

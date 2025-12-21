@@ -32,6 +32,10 @@ rhamaa cms startapp --list
 
 ### `rhamaa cms start <project>`
 Creates new Wagtail project using RhamaaCMS template.
+- `--template-url <zip>` gunakan URL ZIP kustom
+- `--template-file <path>` arahkan ke ZIP/direktori lokal
+- `--local-dev` pakai template di `../RhamaaCMS`
+- `--list` tampilkan katalog template registry
 
 ### `rhamaa cms startapp <name>`
 Creates Django apps or installs prebuilt apps:
@@ -79,6 +83,10 @@ rhamaa cms startapp devices --prebuild mqtt
 rhamaa cms start EduSite
 cd EduSite
 rhamaa cms startapp courses --prebuild lms
+
+# Bootstrapping from custom template sources
+rhamaa cms start MyLocal --template-file ./dist/rhamaacms-template.zip
+rhamaa cms start Latest --template-url https://example.com/custom-template.zip
 
 # Build template kembali dari proyek lokal
 rhamaa cms build-template .
