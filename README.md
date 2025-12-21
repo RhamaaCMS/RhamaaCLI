@@ -40,6 +40,13 @@ Creates Django apps or installs prebuilt apps:
 - `--prebuild <key>` - Install from registry
 - `--list` - Show available prebuilt apps
 
+### `rhamaa cms build-template [source]`
+Konversi proyek RhamaaCMS hasil eksplorasi kembali menjadi template siap pakai:
+- `--slug <name>` tentukan slug proyek asli (default: nama folder sumber)
+- `--output <zip>` nama arsip output (disimpan di `dist/`)
+- `--no-wrap-templates` lewati pembungkusan `{% verbatim %}` pada file HTML
+- `--wrap-templates` aktif secara default untuk menjaga tag template saat di-render `wagtail start`
+
 ### `rhamaa cms run`
 Development and production server management:
 - `rhamaa cms run` - Start development server
@@ -72,6 +79,9 @@ rhamaa cms startapp devices --prebuild mqtt
 rhamaa cms start EduSite
 cd EduSite
 rhamaa cms startapp courses --prebuild lms
+
+# Build template kembali dari proyek lokal
+rhamaa cms build-template .
 ```
 
 ## 🔧 After Installing Apps
