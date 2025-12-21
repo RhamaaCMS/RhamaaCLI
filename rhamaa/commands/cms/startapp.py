@@ -15,7 +15,7 @@ console = Console()
 def load_app_registry():
     """Load app registry from JSON file."""
     try:
-        data = pkgutil.get_data('rhamaa.templates', 'app_list.json')
+        data = pkgutil.get_data('rhamaa.templates.cms', 'app_list.json')
         if data is None:
             console.print("[red]Error:[/red] App registry file not found")
             return {}
@@ -202,8 +202,8 @@ def _render_template(content: str, context: dict) -> str:
     return rendered
 
 def _read_template(rel_path: str) -> str:
-    """Read template file from rhamaa/templates/APPS_TEMPLATES using pkgutil for broad Py support."""
-    pkg = 'rhamaa.templates.APPS_TEMPLATES'
+    """Read template file from rhamaa/templates/cms/APPS_TEMPLATES using pkgutil for broad Py support."""
+    pkg = 'rhamaa.templates.cms.APPS_TEMPLATES'
     data = pkgutil.get_data(pkg, rel_path)
     if data is None:
         raise FileNotFoundError(f"Template not found: {rel_path}")
