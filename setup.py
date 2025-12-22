@@ -5,12 +5,12 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="rhamaa",
-    version="0.4.1",
+    version="0.4.2",
     description="CLI tools to accelerate Wagtail web development with RhamaaCMS.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     author="RhamaaCMS Team",
-    author_email="contact@rhamaacms.com",
+    author_email="firdaus@rhamaa.com",
     url="https://github.com/RhamaaCMS/RhamaaCLI",
     project_urls={
         "Bug Reports": "https://github.com/RhamaaCMS/RhamaaCLI/issues",
