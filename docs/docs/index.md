@@ -16,33 +16,42 @@ Rhamaa CLI streamlines Wagtail development with:
 
 ## Core Commands
 
-### `rhamaa start <project>`
+### `rhamaa cms start <project>`
 Create new Wagtail project with RhamaaCMS template.
 
-### `rhamaa startapp <name>`
+### `rhamaa cms startapp <name>`
 Create Django apps or install prebuilt apps.
+
+### `rhamaa cms run`
+Start development or production server.
+
+### `rhamaa cms check`
+Run system checks and project validation.
 
 ## Quick Start
 
 ```bash
-# Install
-pip install rhamaa
+# Install with CMS support
+pip install "rhamaa[cms]"
 
 # Create project
-rhamaa start MyProject
+rhamaa cms start MyProject
 cd MyProject
 
 # Create minimal app
-rhamaa startapp blog
+rhamaa cms startapp blog
 
 # Create Wagtail app
-rhamaa startapp pages --type wagtail
+rhamaa cms startapp pages --type wagtail
 
 # Install prebuilt app
-rhamaa startapp iot --prebuild mqtt
+rhamaa cms startapp iot --prebuild mqtt
+
+# Start development server
+rhamaa cms run
 
 # List available prebuilt apps
-rhamaa startapp --list
+rhamaa cms startapp --list
 ```
 
 ## Available Prebuilt Apps

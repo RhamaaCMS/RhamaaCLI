@@ -2,10 +2,14 @@
 
 Get started with Rhamaa CLI in 5 minutes.
 
-## 1. Create Project
+## 1. Install & Create Project
 
 ```bash
-rhamaa start MyBlog
+# Install with CMS support
+pip install "rhamaa[cms]"
+
+# Create project
+rhamaa cms start MyBlog
 cd MyBlog
 ```
 
@@ -20,13 +24,13 @@ pip install -r requirements.txt
 ## 3. List Available Apps
 
 ```bash
-rhamaa startapp --list
+rhamaa cms startapp --list
 ```
 
 ## 4. Install Prebuilt App
 
 ```bash
-rhamaa startapp articles --prebuild articles
+rhamaa cms startapp articles --prebuild articles
 ```
 
 ## 5. Configure App
@@ -41,18 +45,34 @@ INSTALLED_APPS = [
 
 Run migrations:
 ```bash
-python manage.py makemigrations
-python manage.py migrate
-python manage.py createsuperuser
+rhamaa cms makemigrations
+rhamaa cms migrate
+rhamaa cms createsuperuser
 ```
 
 ## 6. Start Server
 
 ```bash
-python manage.py runserver
+rhamaa cms run
 ```
 
 Visit `http://127.0.0.1:8000/admin/`
+
+## 7. Additional Commands
+
+```bash
+# Run system checks
+rhamaa cms check
+
+# Run tests
+rhamaa cms test
+
+# Collect static files
+rhamaa cms collectstatic
+
+# Project status
+rhamaa cms status
+```
 
 ## What's Next?
 

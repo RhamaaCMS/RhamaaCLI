@@ -1,18 +1,26 @@
-# App Management
+# CMS Commands
 
-The `startapp` command handles all app creation and installation.
+The `rhamaa cms` command group provides comprehensive CMS development tools.
 
-## Create New Apps
+## Project Management
 
-### Minimal Django App (Default)
+### Create New Project
 ```bash
-rhamaa startapp blog
+rhamaa cms start MyProject
+```
+Creates new Wagtail project using RhamaaCMS template.
+
+### Create New Apps
+
+#### Minimal Django App (Default)
+```bash
+rhamaa cms startapp blog
 ```
 Creates standard Django app in `apps/blog/` using `django-admin startapp`.
 
-### Wagtail App
+#### Wagtail App
 ```bash
-rhamaa startapp pages --type wagtail
+rhamaa cms startapp pages --type wagtail
 ```
 Creates Wagtail-ready app with models, templates, and admin configuration.
 
@@ -20,7 +28,7 @@ Creates Wagtail-ready app with models, templates, and admin configuration.
 
 ### Basic Installation
 ```bash
-rhamaa startapp iot --prebuild mqtt
+rhamaa cms startapp iot --prebuild mqtt
 ```
 Downloads and installs MQTT app from GitHub into `apps/iot/`.
 
@@ -32,10 +40,88 @@ Downloads and installs MQTT app from GitHub into `apps/iot/`.
 ### Examples
 ```bash
 # List all prebuilt apps
-rhamaa startapp --list
+rhamaa cms startapp --list
 
 # Install with force overwrite
-rhamaa startapp users --prebuild users --force
+rhamaa cms startapp users --prebuild users --force
+```
+
+## Development Server
+
+### Start Development Server
+```bash
+rhamaa cms run
+```
+
+### Custom Host/Port
+```bash
+rhamaa cms run --host 0.0.0.0 --port 8080
+```
+
+### Production Server
+```bash
+rhamaa cms run --prod
+```
+Starts with Gunicorn for production deployment.
+
+## Database Management
+
+### Run Migrations
+```bash
+rhamaa cms migrate
+```
+
+### Create Migrations
+```bash
+rhamaa cms makemigrations
+rhamaa cms makemigrations myapp
+```
+
+## Development Tools
+
+### System Checks
+```bash
+rhamaa cms check
+```
+
+### Run Tests
+```bash
+rhamaa cms test
+rhamaa cms test myapp
+```
+
+### Django Shell
+```bash
+rhamaa cms shell
+```
+
+### Create Superuser
+```bash
+rhamaa cms createsuperuser
+```
+
+## Static Files & Search
+
+### Collect Static Files
+```bash
+rhamaa cms collectstatic
+```
+
+### Update Search Index (Wagtail)
+```bash
+rhamaa cms update_index
+```
+
+## Project Information
+
+### Quick Status
+```bash
+rhamaa cms status
+```
+
+### Detailed Information
+```bash
+rhamaa cms info
 ```
 
 ## Listing Available Apps

@@ -4,23 +4,50 @@ Rhamaa CLI provides powerful commands for creating and managing Wagtail projects
 
 ## Creating New Projects
 
-### `rhamaa start`
+### `rhamaa cms start`
 
-Create a new Wagtail project using the RhamaaCMS template.
+Create a new Wagtail project using the RhamaaCMS template or a custom source.
 
 ```bash
-rhamaa start <ProjectName>
+rhamaa cms start <ProjectName>
 ```
 
-**Example:**
+**Examples**
+
 ```bash
-rhamaa start MyBlog
+# Registry template (default key: base)
+rhamaa cms start MyBlog
+
+# Use dev template from registry
+rhamaa cms start DevSandbox --template dev
+
+# Use local RhamaaCMS repo (../RhamaaCMS)
+rhamaa cms start Preview --local-dev
+
+# Use ZIP you previously built
+rhamaa cms start ClientDemo --template-file ./dist/rhamaacms-template.zip
+
+# Use remote ZIP URL
+rhamaa cms start Custom --template-url https://example.com/wagtail-template.zip
+```
+
+#### Template source priority
+
+1. `--template-file` takes precedence if provided (accepts either a ZIP file or directory path)
+2. `--template-url` allows custom HTTP(S) ZIP sources
+3. `--local-dev` points to `../RhamaaCMS` for rapid local testing
+4. Registry lookup via `--template <key>` (default `base`)
+
+You can list available registry templates with:
+
+```bash
+rhamaa cms start --list
 ```
 
 #### What it does:
 
-1. **Downloads Template**: Fetches the latest RhamaaCMS template from GitHub
-2. **Creates Project**: Uses Wagtail's `start` command with the template
+1. **Resolves Template**: Picks the highest priority source (custom file/URL, local dev folder, or registry key)
+2. **Creates Project**: Uses Wagtail's `start` command with the chosen template
 3. **Sets Up Structure**: Configures the project with RhamaaCMS best practices
 4. **Provides Feedback**: Shows progress and success confirmation
 
@@ -60,17 +87,17 @@ MyProject/
 
 ## Creating Django Apps
 
-### `rhamaa startapp`
+### `rhamaa cms startapp`
 
 Create a new Django app with RhamaaCMS structure within your project.
 
 ```bash
-rhamaa startapp <AppName>
+rhamaa cms startapp <AppName>
 ```
 
 **Example:**
 ```bash
-rhamaa startapp blog
+rhamaa cms startapp blog
 ```
 
 #### Features:
@@ -127,12 +154,28 @@ The RhamaaCMS template uses environment-based settings:
 
 ## Advanced Usage
 
-### Custom Templates
+### Converting Projects Back to Templates
 
-While Rhamaa CLI uses the RhamaaCMS template by default, you can still use Wagtail's native template system:
+After customizing a project generated via `rhamaa cms start`, you can convert it back into a reusable template bundle that works with `wagtail start` or `rhamaa cms start --template-file ...`.
 
 ```bash
-wagtail start --template=https://github.com/your-org/your-template.git MyProject
+rhamaa cms build-template [source]
+```
+
+**Options**
+
+- `--slug <name>` – original project slug (defaults to folder name)
+- `--output <zip>` – output filename (stored in `dist/`)
+- `--no-wrap-templates` – skip wrapping HTML files in `{% verbatim %}` (enabled by default)
+
+**Workflow**
+
+1. Customize your generated project (add migrations, assets, fixtures, etc.)
+2. Run `rhamaa cms build-template .`
+3. Use the produced ZIP for future scaffolding:
+
+```bash
+rhamaa cms start MyNextProject --template-file dist/rhamaacms-template.zip
 ```
 
 ### Environment Variables
@@ -218,9 +261,10 @@ The template is ready for deployment to:
 After creating your project:
 
 1. **Set Up Environment**: Create virtual environment and install dependencies
-2. **Add Applications**: Use `rhamaa startapp <AppName> --prebuild <key>` to install prebuilt apps (see `rhamaa startapp --list`)
+2. **Add Applications**: Use `rhamaa cms startapp <AppName> --prebuild <key>` to install prebuilt apps (see `rhamaa cms startapp --list`)
 3. **Configure Settings**: Customize settings for your needs
-4. **Run Migrations**: Set up the database
-5. **Create Superuser**: Access the admin interface
+4. **Run Migrations**: `rhamaa cms migrate`
+5. **Create Superuser**: `rhamaa cms createsuperuser`
+6. **Start Server**: `rhamaa cms run`
 
-See the [App Management](app-management.md) section for adding prebuilt applications to your project.
+See the [CMS Commands](app-management.md) section for comprehensive development tools.
