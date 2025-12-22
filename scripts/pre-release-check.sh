@@ -65,7 +65,7 @@ echo "✅ Package structure looks good"
 echo "🐍 Testing Python imports..."
 python -c "import rhamaa; print('✅ rhamaa package imports successfully')"
 python -c "from rhamaa.cli import main; print('✅ CLI main function imports successfully')"
-python -c "from rhamaa.commands.startapp import startapp; print('✅ startapp command imports successfully')"
+python -c "from rhamaa.commands.cms.startapp import startapp; print('✅ startapp command imports successfully')"
 
 echo ""
 echo "🎉 All pre-release checks passed!"
