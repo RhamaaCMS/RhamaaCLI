@@ -39,7 +39,6 @@ setup(
         "click>=8.0.0",
         "rich>=12.0.0",
         "requests>=2.25.0",
-        "gitpython>=3.1.0",
     ],
     extras_require={
         "cms": [

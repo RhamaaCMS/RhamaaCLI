@@ -65,7 +65,7 @@ def info():
             table.add_row("Django", "[green]Installed[/green]", f"v{result.stdout.strip()}")
         else:
             table.add_row("Django", "[red]Not Found[/red]", "Not installed")
-    except:
+    except Exception:
         table.add_row("Django", "[red]Error[/red]", "Could not check")
     
     # Wagtail version
@@ -76,7 +76,7 @@ def info():
             table.add_row("Wagtail", "[green]Installed[/green]", f"v{result.stdout.strip()}")
         else:
             table.add_row("Wagtail", "[red]Not Found[/red]", "Not installed")
-    except:
+    except Exception:
         table.add_row("Wagtail", "[red]Error[/red]", "Could not check")
     
     console.print(table)
