@@ -1,0 +1,96 @@
+{
+  "schema_version": "1.0.0",
+  "name": "User Management System",
+  "slug": "users",
+  "version": "1.0.0",
+  "description": "Complete user management with authentication, profiles, and allauth integration",
+  "author": "RhamaaCMS",
+  
+  "django": {
+    "installed_apps": [
+      "apps.{app_name}",
+      "allauth",
+      "allauth.account",
+      "allauth.socialaccount"
+    ],
+    "middleware": [
+      {
+        "class": "apps.{app_name}.middleware.UserActivityMiddleware",
+        "position": "after:django.contrib.sessions.middleware.SessionMiddleware"
+      }
+    ],
+    "templates": {
+      "dirs": ["apps/{app_name}/templates"],
+      "context_processors": [
+        "apps.{app_name}.context_processors.user_settings",
+        "apps.{app_name}.context_processors.notifications"
+      ]
+    },
+    "auth_backends": [
+      "apps.{app_name}.backends.EmailBackend",
+      "django.contrib.auth.backends.ModelBackend"
+    ],
+    "settings": {
+      "AUTH_USER_MODEL": "{app_name}.User",
+      "LOGIN_URL": "/accounts/login/",
+      "LOGIN_REDIRECT_URL": "/dashboard/",
+      "LOGOUT_REDIRECT_URL": "/",
+      "ACCOUNT_EMAIL_REQUIRED": true,
+      "ACCOUNT_EMAIL_VERIFICATION": "mandatory",
+      "ACCOUNT_AUTHENTICATION_METHOD": "email",
+      "ACCOUNT_USERNAME_REQUIRED": false
+    }
+  },
+  
+  "urls": [
+    {
+      "path": "accounts/",
+      "include": "apps.{app_name}.urls",
+      "namespace": "accounts",
+      "name": "User accounts"
+    },
+    {
+      "path": "api/auth/",
+      "include": "apps.{app_name}.api_urls",
+      "name": "Auth API"
+    }
+  ],
+  
+  "dependencies": {
+    "apps": [],
+    "packages": [
+      "django-allauth>=0.54.0",
+      "django-crispy-forms>=2.0"
+    ],
+    "optional_apps": ["notifications"]
+  },
+  
+  "staticfiles": {
+    "dirs": ["apps/{app_name}/static"]
+  },
+  
+  "post_install": {
+    "migrations": true,
+    "fixtures": [
+      "apps/{app_name}/fixtures/groups.json",
+      "apps/{app_name}/fixtures/permissions.json"
+    ],
+    "management_commands": [
+      {
+        "command": "create_default_groups",
+        "args": [],
+        "kwargs": {}
+      },
+      {
+        "command": "createsuperuser",
+        "args": [],
+        "kwargs": {"--no-input": true}
+      }
+    ],
+    "messages": [
+      "Add SOCIAL_AUTH_GOOGLE_OAUTH2_KEY and SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET to your environment",
+      "Configure email backend settings: EMAIL_BACKEND, EMAIL_HOST, etc.",
+      "Review allauth settings in apps/{app_name}/allauth_settings.py"
+    ]
+  }
+}

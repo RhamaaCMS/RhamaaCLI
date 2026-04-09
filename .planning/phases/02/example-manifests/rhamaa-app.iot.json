@@ -1,0 +1,89 @@
+{
+  "schema_version": "1.0.0",
+  "name": "IoT Device Management",
+  "slug": "iot",
+  "version": "1.0.0",
+  "description": "IoT device management with MQTT integration and real-time dashboard",
+  "author": "RhamaaCMS",
+  
+  "django": {
+    "installed_apps": [
+      "apps.{app_name}",
+      "channels",
+      "django_celery_beat"
+    ],
+    "middleware": [
+      "apps.{app_name}.middleware.DeviceAuthMiddleware"
+    ],
+    "templates": {
+      "dirs": ["apps/{app_name}/templates"]
+    },
+    "settings": {
+      "MQTT_BROKER_HOST": "localhost",
+      "MQTT_BROKER_PORT": 1883,
+      "MQTT_BROKER_USER": "",
+      "MQTT_BROKER_PASSWORD": "",
+      "CELERY_BROKER_URL": "redis://localhost:6379/0",
+      "CELERY_RESULT_BACKEND": "redis://localhost:6379/0",
+      "ASGI_APPLICATION": "{project_name}.asgi.application",
+      "CHANNEL_LAYERS": {
+        "default": {
+          "BACKEND": "channels_redis.core.RedisChannelLayer",
+          "CONFIG": {
+            "hosts": [["localhost", 6379]]
+          }
+        }
+      }
+    }
+  },
+  
+  "urls": [
+    {
+      "path": "devices/",
+      "include": "apps.{app_name}.urls",
+      "namespace": "devices"
+    },
+    {
+      "path": "api/iot/",
+      "include": "apps.{app_name}.api_urls",
+      "name": "IoT API"
+    }
+  ],
+  
+  "dependencies": {
+    "apps": [],
+    "packages": [
+      "channels>=4.0.0",
+      "channels-redis>=4.0.0",
+      "celery>=5.3.0",
+      "django-celery-beat>=2.5.0",
+      "paho-mqtt>=1.6.0",
+      "redis>=4.5.0"
+    ]
+  },
+  
+  "staticfiles": {
+    "dirs": ["apps/{app_name}/static"]
+  },
+  
+  "post_install": {
+    "migrations": true,
+    "fixtures": [
+      "apps/{app_name}/fixtures/device_types.json"
+    ],
+    "management_commands": [
+      {
+        "command": "setup_mqtt_broker",
+        "args": [],
+        "kwargs": {}
+      }
+    ],
+    "messages": [
+      "Configure MQTT broker settings in your environment or settings",
+      "Start Redis server: redis-server",
+      "Start Celery worker: celery -A {project_name} worker -l info",
+      "Start Celery beat: celery -A {project_name} beat -l info",
+      "Configure ASGI server for WebSocket support"
+    ]
+  }
+}

@@ -58,6 +58,22 @@ When creating apps, RhamaaCLI automatically:
 3. Creates app `urls.py` if not exists
 4. Creates `.bak` backup files before modification (use `--backup`)
 
+**App Manifest System (rhamaa-app.json):**
+Prebuilt apps can include a `rhamaa-app.json` manifest that defines:
+- INSTALLED_APPS and dependencies
+- Middleware configuration with positioning
+- Template directories and context processors
+- Authentication backends
+- Custom Django settings
+- URL patterns with namespaces
+- Post-install tasks (migrations, fixtures, management commands)
+
+This enables **plug-and-play installation**:
+```bash
+rhamaa cms startapp myusers --prebuild users
+# Automatically configures everything from the manifest
+```
+
 ### `rhamaa cms build-template [source]`
 Konversi proyek RhamaaCMS hasil eksplorasi kembali menjadi template siap pakai:
 - `--slug <name>` tentukan slug proyek asli (default: nama folder sumber)
@@ -152,9 +168,12 @@ python manage.py migrate
 - **Auto Directory Structure** - Apps created in `apps/` folder
 - **GitHub Integration** - Downloads apps from repositories
 - **Auto-Configuration** - Automatically adds apps to settings and URLs
+- **App Manifest System** - Plug-and-play app installation with full configuration
 - **Template System** - ZIP-based templates for projects and apps
 - **Dry-Run Mode** - Preview changes without applying
 - **Backup Safety** - Creates `.bak` files before modifications (use `--backup`)
+- **Conflict Detection** - Detects setting/URL conflicts before installation
+- **Dependency Resolution** - Auto-installs app dependencies in correct order
 - **Force Install** - Overwrite existing apps with `--force`
 
 ## 📋 Requirements
