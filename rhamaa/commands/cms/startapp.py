@@ -83,7 +83,7 @@ def show_available_templates():
 @click.option('--template-url', type=str, default=None, help='Custom template ZIP URL')
 @click.option('--template-file', type=click.Path(exists=True, path_type=Path), default=None, help='Local template ZIP or directory')
 @click.option('--dry-run', is_flag=True, help='Preview changes without applying')
-@click.option('--backup/--no-backup', default=True, help='Create backup of modified files')
+@click.option('--backup/--no-backup', default=False, help='Create backup of modified files (default: disabled)')
 @click.option('--skip-config', is_flag=True, help='Skip auto-configuration')
 @click.option('--list', 'list_apps', is_flag=True, help='List available prebuilt apps')
 @click.option('--list-templates', is_flag=True, help='List available app templates')

@@ -46,7 +46,7 @@ Creates Django apps or installs prebuilt apps:
 - `--template-url <url>` - Custom template ZIP URL
 - `--template-file <path>` - Local template ZIP or directory
 - `--dry-run` - Preview changes without applying
-- `--backup/--no-backup` - Create backup files (default: true)
+- `--backup/--no-backup` - Create backup files (default: false)
 - `--skip-config` - Skip auto-configuration
 - `--list` - Show available prebuilt apps
 - `--list-templates` - Show available app templates
@@ -56,7 +56,7 @@ When creating apps, RhamaaCLI automatically:
 1. Adds app to `INSTALLED_APPS` in settings
 2. Wires up URLs in `urls.py`
 3. Creates app `urls.py` if not exists
-4. Creates `.bak` backup files before modification
+4. Creates `.bak` backup files before modification (use `--backup`)
 
 ### `rhamaa cms build-template [source]`
 Konversi proyek RhamaaCMS hasil eksplorasi kembali menjadi template siap pakai:
@@ -154,7 +154,7 @@ python manage.py migrate
 - **Auto-Configuration** - Automatically adds apps to settings and URLs
 - **Template System** - ZIP-based templates for projects and apps
 - **Dry-Run Mode** - Preview changes without applying
-- **Backup Safety** - Creates `.bak` files before modifications
+- **Backup Safety** - Creates `.bak` files before modifications (use `--backup`)
 - **Force Install** - Overwrite existing apps with `--force`
 
 ## 📋 Requirements
