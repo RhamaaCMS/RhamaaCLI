@@ -9,6 +9,7 @@ from rich.table import Table
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
 from rich import box
 from rhamaa.utils import download_github_repo, extract_repo_to_apps, check_wagtail_project
+from rhamaa.config_utils import auto_configure_app, find_settings_file, find_urls_file
 
 console = Console()
 
@@ -34,18 +35,70 @@ def is_app_available(app_name):
     registry = load_app_registry()
     return app_name.lower() in registry
 
+def load_app_template_registry():
+    """Load app template registry from JSON file."""
+    try:
+        data = pkgutil.get_data('rhamaa.templates.cms', 'app_template_list.json')
+        if data is None:
+            return {}
+        return json.loads(data.decode('utf-8'))
+    except (json.JSONDecodeError, Exception):
+        return {}
+
+def show_available_templates():
+    """Display available app templates."""
+    registry = load_app_template_registry()
+    
+    if not registry:
+        console.print("[yellow]No app templates available[/yellow]")
+        return
+    
+    console.print(Panel(
+        "[bold cyan]Available App Templates[/bold cyan]\n"
+        "[dim]Use: rhamaa cms startapp <name> --template <key>[/dim]",
+        expand=False
+    ))
+    
+    table = Table(show_header=True, header_style="bold blue", box=box.SIMPLE)
+    table.add_column("Key", style="bold cyan", width=12)
+    table.add_column("Name", style="white", width=20)
+    table.add_column("Type", style="white", width=10)
+    table.add_column("Description", style="dim", min_width=30)
+    
+    for key, info in registry.items():
+        table.add_row(
+            key,
+            info.get('name', '-'),
+            info.get('type', 'builtin'),
+            info.get('description', '-')
+        )
+    
+    console.print(table)
+
 @click.command()
 @click.argument('app_name', required=False)
-@click.option('--type', 'app_type', type=click.Choice(['minimal', 'wagtail']), default='minimal', show_default=True, help='App template type')
+@click.option('--type', 'app_type', type=click.Choice(['minimal', 'wagtail']), default='minimal', show_default=True, help='App template type (deprecated, use --template)')
 @click.option('--prebuild', type=str, default=None, help='Install a prebuilt app from registry (mqtt, users, articles)')
+@click.option('--template', type=str, default=None, help='Use template from registry (e.g. minimal, wagtail)')
+@click.option('--template-url', type=str, default=None, help='Custom template ZIP URL')
+@click.option('--template-file', type=click.Path(exists=True, path_type=Path), default=None, help='Local template ZIP or directory')
+@click.option('--dry-run', is_flag=True, help='Preview changes without applying')
+@click.option('--backup/--no-backup', default=True, help='Create backup of modified files')
+@click.option('--skip-config', is_flag=True, help='Skip auto-configuration')
 @click.option('--list', 'list_apps', is_flag=True, help='List available prebuilt apps')
+@click.option('--list-templates', is_flag=True, help='List available app templates')
 @click.option('--force', '-f', is_flag=True, help='Overwrite existing app')
-def startapp(app_name, app_type, prebuild, list_apps, force):
+def startapp(app_name, app_type, prebuild, template, template_url, template_file, dry_run, backup, skip_config, list_apps, list_templates, force):
     """Create a new Django app or install prebuilt app."""
     
     # Show available apps
     if list_apps:
         show_available_apps()
+        return
+    
+    # Show available templates
+    if list_templates:
+        show_available_templates()
         return
     
     if not app_name:
@@ -59,11 +112,17 @@ def startapp(app_name, app_type, prebuild, list_apps, force):
     
     # Handle prebuilt app installation
     if prebuild:
-        install_prebuilt_app(app_name, prebuild, force)
+        install_prebuilt_app(app_name, prebuild, force, dry_run, backup, skip_config)
         return
     
-    # Create standard Django app
-    create_standard_app(app_name, app_type, force)
+    # Handle template-based app creation
+    if template_url or template_file or (template and template not in ['minimal', 'wagtail']):
+        # Use new template system for remote/local templates
+        install_template_app(app_name, template, template_url, template_file, force, dry_run, backup, skip_config)
+        return
+    
+    # Create standard Django app (builtin templates)
+    create_standard_app(app_name, template or app_type, force, dry_run, backup, skip_config)
 
 def show_available_apps():
     """Display available prebuilt apps."""
@@ -103,7 +162,7 @@ def show_available_apps():
     
     console.print(f"\n[dim]Total: {len(registry)} apps available[/dim]")
 
-def install_prebuilt_app(app_name, prebuild_key, force):
+def install_prebuilt_app(app_name, prebuild_key, force, dry_run=False, backup=True, skip_config=False):
     """Install a prebuilt app from registry."""
     if not is_app_available(prebuild_key):
         console.print(f"[red]Error:[/red] Prebuilt app '{prebuild_key}' not found")
@@ -117,6 +176,11 @@ def install_prebuilt_app(app_name, prebuild_key, force):
     
     app_info = get_app_info(prebuild_key)
     console.print(f"[cyan]Installing {app_info['name']} as '{app_name}'...[/cyan]")
+    
+    if dry_run:
+        console.print(f"[dry-run] Would download and install to 'apps/{app_name}'")
+        console.print(f"[dry-run] Would auto-configure in project settings")
+        return
     
     with Progress(
         SpinnerColumn(),
@@ -143,16 +207,31 @@ def install_prebuilt_app(app_name, prebuild_key, force):
         
         if success:
             console.print(f"[green]✓[/green] Successfully installed 'apps/{app_name}'")
-            console.print(f"[dim]Next steps:[/dim]")
-            console.print(f"1. Add 'apps.{app_name}' to INSTALLED_APPS")
-            console.print(f"2. Run: python manage.py makemigrations && python manage.py migrate")
+            
+            # Auto-configuration
+            if not skip_config:
+                console.print("\n[bold cyan]Auto-configuring app...[/bold cyan]")
+                changes = auto_configure_app(app_name, dry_run=False, backup=backup)
+                for change in changes:
+                    console.print(f"  • {change}")
+            else:
+                console.print(f"[dim]Next steps:[/dim]")
+                console.print(f"1. Add 'apps.{app_name}' to INSTALLED_APPS")
+                console.print(f"2. Run: python manage.py makemigrations && python manage.py migrate")
         else:
             console.print("[red]Failed to install app[/red]")
 
-def create_standard_app(app_name, app_type, force):
+def create_standard_app(app_name, app_type, force, dry_run=False, backup=True, skip_config=False):
     """Create a standard Django app in apps/ directory."""
     # Ensure apps directory exists
     apps_dir = Path("apps")
+    
+    if dry_run:
+        console.print(f"[dry-run] Would create 'apps/{app_name}' using template '{app_type}'")
+        if not skip_config:
+            console.print(f"[dry-run] Would auto-configure in project settings")
+        return
+    
     apps_dir.mkdir(exist_ok=True)
     
     app_dir = apps_dir / app_name
@@ -192,6 +271,13 @@ def create_standard_app(app_name, app_type, force):
         console.print(f"[cyan]Creating Wagtail app: apps/{app_name}[/cyan]")
         create_app_structure(app_dir, app_name, app_type)
         console.print(f"[green]✓[/green] Created 'apps/{app_name}' app with Wagtail structure")
+    
+    # Auto-configuration
+    if not skip_config and app_dir.exists():
+        console.print("\n[bold cyan]Auto-configuring app...[/bold cyan]")
+        changes = auto_configure_app(app_name, dry_run=False, backup=backup)
+        for change in changes:
+            console.print(f"  • {change}")
 
 # Template functions (copied from original startapp.py)
 def _render_template(content: str, context: dict) -> str:
@@ -297,3 +383,150 @@ def create_template_files(app_dir, app_name, context, prefix=''):
     if prefix == 'wagtail/':
         _write_from_template('wagtail/templates/index.html.tpl', app_dir / 'templates' / app_name / 'index.html', context)
         _write_from_template('wagtail/templates/example_page.html.tpl', app_dir / 'templates' / app_name / 'example_page.html', context)
+
+
+def install_template_app(app_name, template_key, template_url, template_file, force, dry_run=False, backup=True, skip_config=False):
+    """Install app from ZIP template (remote or local)."""
+    import zipfile
+    import tempfile
+    import shutil
+    from rhamaa.utils import download_github_repo
+    
+    app_dir = Path("apps") / app_name
+    
+    if app_dir.exists() and not force:
+        console.print(f"[yellow]Warning:[/yellow] App '{app_name}' already exists. Use --force to overwrite")
+        return
+    
+    # Determine template source
+    zip_path = None
+    template_name = None
+    
+    if template_file:
+        zip_path = template_file if isinstance(template_file, Path) else Path(template_file)
+        template_name = zip_path.name
+        console.print(f"[cyan]Using local template: {zip_path}[/cyan]")
+    elif template_url:
+        console.print(f"[cyan]Downloading template from URL...[/cyan]")
+        # Download from URL
+        import requests
+        try:
+            response = requests.get(template_url, stream=True)
+            response.raise_for_status()
+            
+            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.zip')
+            with temp_file as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+            zip_path = Path(temp_file.name)
+            template_name = "custom-url"
+        except Exception as e:
+            console.print(f"[red]Failed to download template:[/red] {e}")
+            return
+    elif template_key:
+        registry = load_app_template_registry()
+        template_info = registry.get(template_key)
+        
+        if not template_info:
+            console.print(f"[red]Template '{template_key}' not found in registry[/red]")
+            return
+        
+        if template_info.get('type') == 'remote':
+            template_name = template_info.get('name', template_key)
+            console.print(f"[cyan]Installing {template_name} as '{app_name}'...[/cyan]")
+            
+            if dry_run:
+                console.print(f"[dry-run] Would download from {template_info.get('repository')}")
+                return
+            
+            # Download from GitHub
+            zip_path = download_github_repo(
+                template_info['repository'],
+                template_info.get('branch', 'main')
+            )
+            if not zip_path:
+                console.print("[red]Failed to download template[/red]")
+                return
+        else:
+            # Built-in template - use existing method
+            create_standard_app(app_name, template_key, force, dry_run, backup, skip_config)
+            return
+    
+    if dry_run:
+        console.print(f"[dry-run] Would extract template to 'apps/{app_name}'")
+        if not skip_config:
+            console.print(f"[dry-run] Would auto-configure in project settings")
+        return
+    
+    # Extract ZIP to apps directory
+    if zip_path and zip_path.exists():
+        console.print(f"[cyan]Extracting template to apps/{app_name}...[/cyan]")
+        
+        try:
+            with tempfile.TemporaryDirectory() as tmpdir:
+                # Extract ZIP
+                with zipfile.ZipFile(zip_path, 'r') as zf:
+                    zf.extractall(tmpdir)
+                
+                tmp_path = Path(tmpdir)
+                contents = list(tmp_path.iterdir())
+                
+                # Handle nested directory (GitHub repos have root folder)
+                if len(contents) == 1 and contents[0].is_dir():
+                    template_root = contents[0]
+                else:
+                    template_root = tmp_path
+                
+                # Create apps directory if needed
+                app_dir.parent.mkdir(exist_ok=True)
+                
+                # Remove existing if forced
+                if app_dir.exists():
+                    shutil.rmtree(app_dir)
+                
+                # Move to final location
+                shutil.move(str(template_root), str(app_dir))
+                
+                # Process template files
+                process_zip_template_files(app_dir, app_name)
+                
+                console.print(f"[green]✓[/green] Successfully installed 'apps/{app_name}'")
+                
+                # Auto-configuration
+                if not skip_config:
+                    console.print("\n[bold cyan]Auto-configuring app...[/bold cyan]")
+                    changes = auto_configure_app(app_name, dry_run=False, backup=backup)
+                    for change in changes:
+                        console.print(f"  • {change}")
+                
+        except Exception as e:
+            console.print(f"[red]Failed to extract template:[/red] {e}")
+        finally:
+            # Clean up temp zip file if downloaded
+            if template_url and zip_path and zip_path.exists():
+                zip_path.unlink()
+
+
+def process_zip_template_files(app_dir, app_name):
+    """Process .tpl files in extracted template."""
+    context = {
+        'app_name': app_name,
+        'app_title': app_name.replace('_', ' ').title(),
+        'app_class': app_name.title().replace('_', ''),
+        'app_upper': app_name.upper(),
+    }
+    
+    for tpl_file in app_dir.rglob('*.tpl'):
+        content = tpl_file.read_text(encoding='utf-8')
+        
+        # Replace placeholders
+        for key, value in context.items():
+            content = content.replace(f'{{{{{key}}}}}', str(value))
+        
+        # Write to destination without .tpl extension
+        dest_file = tpl_file.with_suffix('')
+        dest_file.write_text(content, encoding='utf-8')
+        
+        # Remove original .tpl file
+        tpl_file.unlink()

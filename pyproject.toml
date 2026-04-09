@@ -81,7 +81,8 @@ include-package-data = true
 rhamaa = [
     "*.py",
     "templates/cms/APPS_TEMPLATES/**/*",
-    "templates/cms/*.json"
+    "templates/cms/*.json",
+    "templates/cms/app_template_list.json"
 ]
 
 [tool.black]
