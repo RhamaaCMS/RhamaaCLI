@@ -14,13 +14,13 @@
   "inertia-react": {
     "name": "RhamaaCMS Inertia + React",
     "description": "Wagtail dengan Inertia.js dan React frontend untuk SPA experience.",
-    "repository": "https://github.com/RhamaaCMS/RhamaaCMS/blob/base-inertia-react",
+    "repository": "https://github.com/RhamaaCMS/RhamaaCMS",
     "branch": "base-inertia-react"
   },
   "iot": {
     "name": "RhamaaCMS IoT",
     "description": "Template IoT dengan integrasi MQTT dan dashboard perangkat.",
-    "repository": "https://github.com/RhamaaCMS/RhamaaCMS/blob/base-iot",
+    "repository": "https://github.com/RhamaaCMS/RhamaaCMS",
     "branch": "base-iot"
   }
 }

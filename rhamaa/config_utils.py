@@ -176,7 +176,12 @@ def find_settings_file(project_path: Optional[Path] = None) -> Optional[Path]:
     # Also try project-named subdirectory
     for subdir in search_path.iterdir():
         if subdir.is_dir() and not subdir.name.startswith('.'):
-            candidates.append(subdir / "settings.py")
+            candidates.extend([
+                subdir / "settings" / "base.py",
+                subdir / "settings" / "local.py",
+                subdir / "settings" / "production.py",
+                subdir / "settings.py",
+            ])
 
     for candidate in candidates:
         if candidate.exists():
@@ -227,7 +232,11 @@ def auto_configure_app(app_name: str, project_path: Optional[Path] = None,
         if parser.add_installed_app(f'apps.{app_name}'):
             if not dry_run:
                 parser.write(backup=backup)
-            changes.append(f"Added 'apps.{app_name}' to INSTALLED_APPS in {settings_file.name}")
+            try:
+                rel_path = settings_file.relative_to(search_path)
+            except ValueError:
+                rel_path = settings_file.name
+            changes.append(f"Added 'apps.{app_name}' to INSTALLED_APPS in {rel_path}")
     else:
         changes.append(f"[yellow]Could not find settings file[/yellow]")
 
@@ -238,7 +247,11 @@ def auto_configure_app(app_name: str, project_path: Optional[Path] = None,
         if parser.add_url_pattern(app_name):
             if not dry_run:
                 parser.write(backup=backup)
-            changes.append(f"Added URL pattern for '{app_name}' in {urls_file.name}")
+            try:
+                rel_path = urls_file.relative_to(search_path)
+            except ValueError:
+                rel_path = urls_file.name
+            changes.append(f"Added URL pattern for '{app_name}' in {rel_path}")
     else:
         changes.append(f"[yellow]Could not find urls.py[/yellow]")
 
