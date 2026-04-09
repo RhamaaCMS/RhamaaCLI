@@ -10,6 +10,7 @@ from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskPr
 from rich import box
 from rhamaa.utils import download_github_repo, extract_repo_to_apps, check_wagtail_project
 from rhamaa.config_utils import auto_configure_app, find_settings_file, find_urls_file
+from rhamaa.manifest_applier import install_app_with_manifest
 
 console = Console()
 
@@ -162,8 +163,8 @@ def show_available_apps():
     
     console.print(f"\n[dim]Total: {len(registry)} apps available[/dim]")
 
-def install_prebuilt_app(app_name, prebuild_key, force, dry_run=False, backup=True, skip_config=False):
-    """Install a prebuilt app from registry."""
+def install_prebuilt_app(app_name, prebuild_key, force, dry_run=False, backup=False, skip_config=False):
+    """Install a prebuilt app from registry using manifest system."""
     if not is_app_available(prebuild_key):
         console.print(f"[red]Error:[/red] Prebuilt app '{prebuild_key}' not found")
         console.print("Use [cyan]rhamaa cms startapp --list[/cyan] to see available apps")
@@ -174,6 +175,18 @@ def install_prebuilt_app(app_name, prebuild_key, force, dry_run=False, backup=Tr
         console.print(f"[yellow]Warning:[/yellow] App '{app_name}' already exists. Use --force to overwrite")
         return
     
+    # Use new manifest-based installation
+    if not skip_config:
+        result = install_app_with_manifest(
+            app_name=app_name,
+            prebuild_key=prebuild_key,
+            force=force,
+            dry_run=dry_run,
+            backup=backup
+        )
+        return
+    
+    # Fallback: Basic installation without manifest
     app_info = get_app_info(prebuild_key)
     console.print(f"[cyan]Installing {app_info['name']} as '{app_name}'...[/cyan]")
     
@@ -207,19 +220,7 @@ def install_prebuilt_app(app_name, prebuild_key, force, dry_run=False, backup=Tr
         
         if success:
             console.print(f"[green]✓[/green] Successfully installed 'apps/{app_name}'")
-            
-            # Auto-configuration
-            if not skip_config:
-                console.print("\n[bold cyan]Auto-configuring app...[/bold cyan]")
-                changes = auto_configure_app(app_name, dry_run=False, backup=backup)
-                for change in changes:
-                    console.print(f"  • {change}")
-            else:
-                console.print(f"[dim]Next steps:[/dim]")
-                console.print(f"1. Add 'apps.{app_name}' to INSTALLED_APPS")
-                console.print(f"2. Run: python manage.py makemigrations && python manage.py migrate")
-        else:
-            console.print("[red]Failed to install app[/red]")
+            console.print(f"[dim]Note: Install without --skip-config to use automatic manifest-based configuration[/dim]")
 
 def create_standard_app(app_name, app_type, force, dry_run=False, backup=True, skip_config=False):
     """Create a standard Django app in apps/ directory."""
