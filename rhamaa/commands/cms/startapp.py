@@ -14,6 +14,51 @@ from rhamaa.manifest_applier import install_app_with_manifest
 
 console = Console()
 
+def create_standard_manifest(app_dir: Path, app_name: str, app_type: str) -> Path:
+    """
+    Create a default `rhamaa-app.json` for standard apps.
+
+    This keeps standard apps aligned with the prebuilt/manifest convention so they
+    can be promoted to prebuilt apps later without inventing a new format.
+    """
+    manifest_path = app_dir / "rhamaa-app.json"
+
+    # Keep placeholders so the manifest can be reused as a prebuilt template.
+    manifest = {
+        "schema_version": "1.0.0",
+        "name": app_name.replace("_", " ").title(),
+        "slug": "{app_name}",
+        "version": "1.0.0",
+        "description": f"RhamaaCMS standard {app_type} app scaffold",
+        "author": "RhamaaCMS",
+        "django": {
+            "installed_apps": ["apps.{app_name}"],
+            "middleware": [],
+            "templates": None,
+            "auth_backends": [],
+            "settings": {},
+        },
+        "urls": [
+            {
+                "path": "{app_name}/",
+                "include": "apps.{app_name}.urls",
+                "namespace": "{app_name}",
+                "name": "{app_name}",
+            }
+        ],
+        "dependencies": {"apps": [], "packages": [], "optional_apps": []},
+        "staticfiles": None,
+        "post_install": {
+            "migrations": True,
+            "fixtures": [],
+            "management_commands": [],
+            "messages": [],
+        },
+    }
+
+    manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    return manifest_path
+
 def load_app_registry():
     """Load app registry from JSON file."""
     try:
@@ -180,6 +225,7 @@ def create_standard_app(app_name, app_type, force, dry_run=False, backup=True, s
     
     if dry_run:
         console.print(f"[dry-run] Would create 'apps/{app_name}' using template '{app_type}'")
+        console.print("[dry-run] Would create 'apps/{app_name}/rhamaa-app.json' manifest")
         if not skip_config:
             console.print(f"[dry-run] Would auto-configure in project settings")
         return
@@ -223,6 +269,14 @@ def create_standard_app(app_name, app_type, force, dry_run=False, backup=True, s
         console.print(f"[cyan]Creating Wagtail app: apps/{app_name}[/cyan]")
         create_app_structure(app_dir, app_name, app_type)
         console.print(f"[green]✓[/green] Created 'apps/{app_name}' app with Wagtail structure")
+
+    # Create RhamaaCMS manifest (standardization with prebuilt apps)
+    if app_dir.exists():
+        try:
+            manifest_path = create_standard_manifest(app_dir, app_name, app_type)
+            console.print(f"[green]✓[/green] Created manifest: apps/{app_name}/{manifest_path.name}")
+        except Exception as e:
+            console.print(f"[yellow]Warning:[/yellow] Failed to create rhamaa-app.json: {e}")
     
     # Auto-configuration
     if not skip_config and app_dir.exists():
