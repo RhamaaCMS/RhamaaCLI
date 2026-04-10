@@ -89,16 +89,12 @@ rhamaa cms startapp <app_name> [OPTIONS]
 | Option | Description |
 |--------|-------------|
 | `--type <type>` | App template type: `minimal` or `wagtail` (default: minimal) |
-| `--template <key>` | Use template from registry |
-| `--template-url <url>` | Custom template ZIP URL |
-| `--template-file <path>` | Local template ZIP or directory |
 | `--prebuild <key>` | Install prebuilt app from registry |
 | `--dry-run` | Preview changes without applying |
 | `--backup` | Create backup of modified files |
 | `--no-backup` | Don't create backup (default) |
 | `--skip-config` | Skip auto-configuration |
 | `--list` | List available prebuilt apps |
-| `--list-templates` | List available app templates |
 | `--force` / `-f` | Overwrite existing app |
 
 **Examples:**
@@ -121,6 +117,9 @@ rhamaa cms startapp myusers --prebuild users --backup
 # List available apps
 rhamaa cms startapp --list
 ```
+
+**Notes:**
+- Standard apps created with `--type minimal|wagtail` also generate a default `apps/<app_name>/rhamaa-app.json` manifest for RhamaaCMS standardization.
 
 **Available Prebuilt Apps:**
 | App | Category | Description |
@@ -265,19 +264,6 @@ rhamaa cms startapp devices --prebuild mqtt
 
 # Run migrations for all
 rhamaa cms migrate
-```
-
-### Using Custom Templates
-
-```bash
-# From URL
-rhamaa cms startapp api --template-url https://example.com/api-template.zip
-
-# From local file
-rhamaa cms startapp api --template-file ./templates/api.zip
-
-# From registry
-rhamaa cms startapp api --template api
 ```
 
 ---

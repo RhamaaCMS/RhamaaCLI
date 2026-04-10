@@ -27,6 +27,12 @@ rhamaa cms startapp blog
 rhamaa cms startapp blog --type wagtail
 ```
 
+When creating a standard app, RhamaaCLI also generates a default manifest file:
+
+- `apps/<app_name>/rhamaa-app.json`
+
+This keeps standard apps aligned with the prebuilt app manifest convention used by RhamaaCMS.
+
 ### Prebuilt App Installation
 
 ```bash
@@ -89,7 +95,7 @@ rhamaa cms startapp myusers --prebuild users --dry-run
 
 Output example:
 ```
-[dry-run] Would extract template to 'apps/myusers'
+[dry-run] Would install app into 'apps/myusers'
 [dry-run] Would auto-configure in project settings
   + Added 'apps.myusers' to INSTALLED_APPS
   + Added middleware: apps.myusers.middleware.ActivityMiddleware

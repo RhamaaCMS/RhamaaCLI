@@ -8,9 +8,8 @@ Practical examples of common RhamaaCLI workflows.
 2. [Project Creation](#project-creation)
 3. [App Development](#app-development)
 4. [Prebuilt Apps](#prebuilt-apps)
-5. [Custom Templates](#custom-templates)
-6. [API Usage](#api-usage)
-7. [Advanced Scenarios](#advanced-scenarios)
+5. [API Usage](#api-usage)
+6. [Advanced Scenarios](#advanced-scenarios)
 
 ---
 
@@ -113,6 +112,14 @@ rhamaa cms startapp blog --type wagtail
 # Preview what will be created
 rhamaa cms startapp blog --type wagtail --dry-run
 ```
+
+### Standard App Manifest (`rhamaa-app.json`)
+
+When you create a standard app (`--type minimal|wagtail`), RhamaaCLI also creates:
+
+- `apps/<app_name>/rhamaa-app.json`
+
+This standardizes local apps to the same manifest format used by prebuilt apps, so your app can be promoted into a prebuilt app later without changing formats.
 
 ### App Structure
 
@@ -241,78 +248,6 @@ rhamaa cms run
 ```
 
 ---
-
-## Custom Templates
-
-### Creating App Template
-
-```bash
-# 1. Create template directory
-mkdir -p my-api-template/apps/{app_name}
-
-# 2. Create files with placeholders
-cat > my-api-template/apps/{app_name}/views.py.tpl << 'EOF'
-from rest_framework import viewsets
-from .models import {{app_class_name}}
-from .serializers import {{app_class_name}}Serializer
-
-class {{app_class_name}}ViewSet(viewsets.ModelViewSet):
-    queryset = {{app_class_name}}.objects.all()
-    serializer_class = {{app_class_name}}Serializer
-EOF
-
-cat > my-api-template/apps/{app_name}/serializers.py.tpl << 'EOF'
-from rest_framework import serializers
-from .models import {{app_class_name}}
-
-class {{app_class_name}}Serializer(serializers.ModelSerializer):
-    class Meta:
-        model = {{app_class_name}}
-        fields = '__all__'
-EOF
-
-# 3. Create manifest
-cat > my-api-template/rhamaa-app.json << 'EOF'
-{
-  "schema_version": "1.0.0",
-  "name": "API App",
-  "slug": "api",
-  "django": {
-    "installed_apps": ["apps.{app_name}", "rest_framework"]
-  },
-  "urls": [{"path": "api/{app_name}/", "include": "apps.{app_name}.urls"}]
-}
-EOF
-
-# 4. Create ZIP
-cd my-api-template && zip -r ../my-api-template.zip . && cd ..
-
-# 5. Test template
-rhamaa cms startapp products --template-file ./my-api-template.zip --dry-run
-```
-
-### Building Project Template
-
-```bash
-# 1. Create base project
-rhamaa cms start TemplateSource
-
-# 2. Customize it
-cd TemplateSource
-# ... add your apps, settings, etc. ...
-
-# 3. Build template
-rhamaa cms build-template . --slug my-template --output my-template.zip
-
-# 4. Template is created in dist/my-template.zip
-
-# 5. Test it
-mkdir test-project && cd test-project
-rhamaa cms start Test --template-file ../TemplateSource/dist/my-template.zip
-```
-
----
-
 ## API Usage
 
 ### Programmatic App Installation

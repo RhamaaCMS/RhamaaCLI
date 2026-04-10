@@ -31,7 +31,7 @@ rhamaa cms startapp users --prebuild users
 - **📦 Prebuilt Apps** - Install ready-to-use apps from registry
 - **⚙️ Auto-Configuration** - Automatic settings and URL configuration
 - **📋 App Manifest System** - Plug-and-play app installation with full configuration
-- **🔧 Template System** - Support for custom ZIP-based templates
+- **🔧 Template System** - Support for custom ZIP-based project templates
 - **🛡️ Conflict Detection** - Detect configuration conflicts before installation
 - **📊 Dependency Resolution** - Auto-install app dependencies
 - **🎯 Dry-Run Mode** - Preview changes without applying
@@ -42,10 +42,11 @@ rhamaa cms startapp users --prebuild users
 |---------|-------------|
 | [Commands](commands.md) | Complete CLI command reference |
 | [App Manifest](manifest.md) | rhamaa-app.json manifest system |
-| [Templates](templates.md) | Project and app templates |
+| [Templates](templates.md) | Project templates |
 | [Configuration](configuration.md) | Auto-configuration system |
 | [API Reference](api.md) | Python API documentation |
 | [Examples](examples.md) | Usage examples |
+| [Skills](skills/rhamaa-app-builder.md) | Internal docs: manifest → app builder workflow |
 | [Troubleshooting](troubleshooting.md) | Common issues and solutions |
 
 ## System Requirements
