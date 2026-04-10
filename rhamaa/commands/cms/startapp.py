@@ -8,7 +8,7 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
 from rich import box
-from rhamaa.utils import download_github_repo, extract_repo_to_apps, check_wagtail_project
+from rhamaa.utils import download_github_repo, extract_repo_to_apps, check_wagtail_project, install_dir_to_apps, safe_extract_zip, _pick_extracted_root
 from rhamaa.config_utils import auto_configure_app, find_settings_file, find_urls_file
 from rhamaa.manifest_applier import install_app_with_manifest
 
@@ -460,47 +460,46 @@ def install_template_app(app_name, template_key, template_url, template_file, fo
             console.print(f"[dry-run] Would auto-configure in project settings")
         return
     
-    # Extract ZIP to apps directory
+    # Extract/install template into apps directory
     if zip_path and zip_path.exists():
         console.print(f"[cyan]Extracting template to apps/{app_name}...[/cyan]")
-        
+
         try:
             with tempfile.TemporaryDirectory() as tmpdir:
-                # Extract ZIP
-                with zipfile.ZipFile(zip_path, 'r') as zf:
-                    zf.extractall(tmpdir)
-                
                 tmp_path = Path(tmpdir)
-                contents = list(tmp_path.iterdir())
-                
-                # Handle nested directory (GitHub repos have root folder)
-                if len(contents) == 1 and contents[0].is_dir():
-                    template_root = contents[0]
-                else:
-                    template_root = tmp_path
-                
-                # Create apps directory if needed
-                app_dir.parent.mkdir(exist_ok=True)
-                
-                # Remove existing if forced
-                if app_dir.exists():
-                    shutil.rmtree(app_dir)
-                
-                # Move to final location
-                shutil.move(str(template_root), str(app_dir))
-                
+                safe_extract_zip(zip_path, tmp_path)
+                template_root = _pick_extracted_root(tmp_path)
+
+                installed_app_dir = install_dir_to_apps(
+                    app_name=app_name,
+                    source_dir=template_root,
+                    force=force,
+                    dry_run=dry_run,
+                    operation="move",
+                )
+
+                if dry_run:
+                    console.print(f"[dry-run] Would extract template to 'apps/{app_name}'")
+                    if not skip_config:
+                        console.print(f"[dry-run] Would auto-configure in project settings")
+                    return
+
+                if not installed_app_dir:
+                    console.print(f"[yellow]Warning:[/yellow] App '{app_name}' already exists. Use --force to overwrite")
+                    return
+
                 # Process template files
-                process_zip_template_files(app_dir, app_name)
-                
+                process_zip_template_files(installed_app_dir, app_name)
+
                 console.print(f"[green]✓[/green] Successfully installed 'apps/{app_name}'")
-                
+
                 # Auto-configuration
                 if not skip_config:
                     console.print("\n[bold cyan]Auto-configuring app...[/bold cyan]")
                     changes = auto_configure_app(app_name, dry_run=False, backup=backup)
                     for change in changes:
                         console.print(f"  • {change}")
-                
+
         except Exception as e:
             console.print(f"[red]Failed to extract template:[/red] {e}")
         finally:
