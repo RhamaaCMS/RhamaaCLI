@@ -8,7 +8,13 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
 from rich import box
-from rhamaa.utils import download_github_repo, extract_repo_to_apps, check_wagtail_project, install_dir_to_apps, safe_extract_zip, _pick_extracted_root
+from rhamaa.utils import (
+    download_github_repo,
+    extract_repo_to_apps,
+    check_wagtail_project,
+    install_dir_to_apps,
+    install_zip_to_apps,
+)
 from rhamaa.config_utils import auto_configure_app, find_settings_file, find_urls_file
 from rhamaa.manifest_applier import install_app_with_manifest
 
@@ -388,9 +394,7 @@ def create_template_files(app_dir, app_name, context, prefix=''):
 
 def install_template_app(app_name, template_key, template_url, template_file, force, dry_run=False, backup=True, skip_config=False):
     """Install app from ZIP template (remote or local)."""
-    import zipfile
     import tempfile
-    import shutil
     from rhamaa.utils import download_github_repo
     
     app_dir = Path("apps") / app_name
@@ -399,113 +403,114 @@ def install_template_app(app_name, template_key, template_url, template_file, fo
         console.print(f"[yellow]Warning:[/yellow] App '{app_name}' already exists. Use --force to overwrite")
         return
     
-    # Determine template source
-    zip_path = None
-    template_name = None
-    
+    # Acquire template source (directory or ZIP)
+    source_dir: Path | None = None
+    zip_path: Path | None = None
+    cleanup_zip = False
+
     if template_file:
-        zip_path = template_file if isinstance(template_file, Path) else Path(template_file)
-        template_name = zip_path.name
-        console.print(f"[cyan]Using local template: {zip_path}[/cyan]")
+        template_path = template_file if isinstance(template_file, Path) else Path(template_file)
+        console.print(f"[cyan]Using local template: {template_path}[/cyan]")
+        if template_path.is_dir():
+            source_dir = template_path
+        else:
+            zip_path = template_path
     elif template_url:
-        console.print(f"[cyan]Downloading template from URL...[/cyan]")
-        # Download from URL
+        console.print("[cyan]Downloading template from URL...[/cyan]")
         import requests
         try:
             response = requests.get(template_url, stream=True)
             response.raise_for_status()
-            
-            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.zip')
+
+            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
             with temp_file as f:
                 for chunk in response.iter_content(chunk_size=8192):
                     if chunk:
                         f.write(chunk)
             zip_path = Path(temp_file.name)
-            template_name = "custom-url"
+            cleanup_zip = True
         except Exception as e:
             console.print(f"[red]Failed to download template:[/red] {e}")
             return
     elif template_key:
         registry = load_app_template_registry()
         template_info = registry.get(template_key)
-        
+
         if not template_info:
             console.print(f"[red]Template '{template_key}' not found in registry[/red]")
             return
-        
-        if template_info.get('type') == 'remote':
-            template_name = template_info.get('name', template_key)
+
+        if template_info.get("type") == "remote":
+            template_name = template_info.get("name", template_key)
             console.print(f"[cyan]Installing {template_name} as '{app_name}'...[/cyan]")
-            
+
             if dry_run:
                 console.print(f"[dry-run] Would download from {template_info.get('repository')}")
                 return
-            
-            # Download from GitHub
-            zip_path = download_github_repo(
-                template_info['repository'],
-                template_info.get('branch', 'main')
+
+            downloaded = download_github_repo(
+                template_info["repository"],
+                template_info.get("branch", "main"),
             )
-            if not zip_path:
+            if not downloaded:
                 console.print("[red]Failed to download template[/red]")
                 return
+            zip_path = Path(downloaded)
         else:
             # Built-in template - use existing method
             create_standard_app(app_name, template_key, force, dry_run, backup, skip_config)
             return
-    
-    if dry_run:
-        console.print(f"[dry-run] Would extract template to 'apps/{app_name}'")
+
+    # Install into apps/
+    try:
+        if source_dir:
+            installed_app_dir = install_dir_to_apps(
+                app_name=app_name,
+                source_dir=source_dir,
+                force=force,
+                dry_run=dry_run,
+                operation="copy",
+            )
+        elif zip_path and zip_path.exists():
+            console.print(f"[cyan]Extracting template to apps/{app_name}...[/cyan]")
+            installed_app_dir = install_zip_to_apps(
+                zip_path=zip_path,
+                app_name=app_name,
+                force=force,
+                dry_run=dry_run,
+                operation="move",
+                cleanup_zip=cleanup_zip,
+            )
+        else:
+            console.print("[red]No template source provided[/red]")
+            return
+
+        if dry_run:
+            console.print(f"[dry-run] Would extract/copy template to 'apps/{app_name}'")
+            if not skip_config:
+                console.print("[dry-run] Would auto-configure in project settings")
+            return
+
+        if not installed_app_dir:
+            console.print(f"[yellow]Warning:[/yellow] App '{app_name}' already exists. Use --force to overwrite")
+            return
+
+        process_zip_template_files(installed_app_dir, app_name)
+
+        console.print(f"[green]✓[/green] Successfully installed 'apps/{app_name}'")
+
         if not skip_config:
-            console.print(f"[dry-run] Would auto-configure in project settings")
-        return
-    
-    # Extract/install template into apps directory
-    if zip_path and zip_path.exists():
-        console.print(f"[cyan]Extracting template to apps/{app_name}...[/cyan]")
-
-        try:
-            with tempfile.TemporaryDirectory() as tmpdir:
-                tmp_path = Path(tmpdir)
-                safe_extract_zip(zip_path, tmp_path)
-                template_root = _pick_extracted_root(tmp_path)
-
-                installed_app_dir = install_dir_to_apps(
-                    app_name=app_name,
-                    source_dir=template_root,
-                    force=force,
-                    dry_run=dry_run,
-                    operation="move",
-                )
-
-                if dry_run:
-                    console.print(f"[dry-run] Would extract template to 'apps/{app_name}'")
-                    if not skip_config:
-                        console.print(f"[dry-run] Would auto-configure in project settings")
-                    return
-
-                if not installed_app_dir:
-                    console.print(f"[yellow]Warning:[/yellow] App '{app_name}' already exists. Use --force to overwrite")
-                    return
-
-                # Process template files
-                process_zip_template_files(installed_app_dir, app_name)
-
-                console.print(f"[green]✓[/green] Successfully installed 'apps/{app_name}'")
-
-                # Auto-configuration
-                if not skip_config:
-                    console.print("\n[bold cyan]Auto-configuring app...[/bold cyan]")
-                    changes = auto_configure_app(app_name, dry_run=False, backup=backup)
-                    for change in changes:
-                        console.print(f"  • {change}")
-
-        except Exception as e:
-            console.print(f"[red]Failed to extract template:[/red] {e}")
-        finally:
-            # Clean up temp zip file if downloaded
-            if template_url and zip_path and zip_path.exists():
+            console.print("\n[bold cyan]Auto-configuring app...[/bold cyan]")
+            changes = auto_configure_app(app_name, dry_run=False, backup=backup)
+            for change in changes:
+                console.print(f"  • {change}")
+    finally:
+        # Cleanup is centralized in install_zip_to_apps; only handle URL-downloaded zip if install was skipped early.
+        if cleanup_zip and zip_path and zip_path.exists() and dry_run:
+            try:
                 zip_path.unlink()
+            except OSError:
+                pass
 
 
 def process_zip_template_files(app_dir, app_name):
