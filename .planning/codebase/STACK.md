@@ -1,53 +1,109 @@
-# Technology Stack - RhamaaCLI
+# Technology Stack
 
-## Core Technologies
+**Analysis Date:** 2026-04-10
 
-| Category | Technology | Version | Purpose |
-|----------|------------|---------|---------|
-| Language | Python | 3.7+ | Runtime environment |
-| CLI Framework | Click | >=8.0.0 | Command-line interface framework |
-| Terminal UI | Rich | >=12.0.0 | Beautiful terminal output, progress bars, tables |
-| HTTP Client | Requests | >=2.25.0 | Download repositories from GitHub |
-| Build System | setuptools | >=45 | Package building and distribution |
-| Version Control | setuptools_scm | >=6.2 | Git-based versioning |
+## Languages
 
-## Optional Dependencies
+**Primary:**
+- Python 3.7+ - All source code; `pyproject.toml` specifies `requires-python = ">=3.7"`
+  - Classifiers declare support for 3.7, 3.8, 3.9, 3.10, 3.11, 3.12
 
-### CMS Extras
-- **Wagtail** >=5.0 - CMS framework (optional for end-users)
+## Runtime
 
-### Computer Vision Extras
-- **ultralytics** >=8.0.0 - YOLO object detection
-- **opencv-python** >=4.8.0 - Computer vision operations
+**Environment:**
+- CPython 3.7+
+- Cross-platform; all file system operations use `pathlib.Path`, no OS-specific code detected
 
-### Development Extras
-- **pytest** >=6.0 - Testing framework
-- **pytest-cov** - Coverage reporting
-- **black** - Code formatting
-- **flake8** - Linting
-- **twine** - PyPI publishing
-- **build** - Package building
+**Package Manager:**
+- pip / setuptools
+- Lockfile: `requirements.txt` present (minimal, mirrors core deps plus `gitpython`)
+- Build backend: `setuptools>=45` + `wheel` declared in `pyproject.toml`
 
-## Package Distribution
+## Frameworks
 
-- **PyPI Package**: `rhamaa` (v0.4.2)
-- **License**: MIT
-- **Entry Point**: `rhamaa` → `rhamaa.cli:main`
+**Core:**
+- `click >= 8.0.0` - CLI framework; all commands built with `@click.command()`, `@click.group()`,
+  `@click.argument()`, `@click.option()`. Entry group in `rhamaa/cli.py`, subgroup `cms` in
+  `rhamaa/commands/cms/__init__.py`.
+- `rich >= 12.0.0` - Terminal output; `Console`, `Panel`, `Table`, `Progress`, `SpinnerColumn`,
+  `BarColumn`, `TaskProgressColumn`, `Text`, `Markdown`, `box`. Used in every command module.
 
-## Key Libraries Usage
+**Optional Extras (not installed by default):**
+- `wagtail >= 5.0` (`[cms]` extra) - Target CMS framework; CLI wraps `wagtail start` and
+  `django-admin startapp` subprocess calls
+- `ultralytics >= 8.0.0` (`[cv]` extra) - YOLO computer vision; defined in extras but not imported
+  in any current source file
+- `opencv-python >= 4.8.0` (`[cv]` extra) - Computer vision; same status as ultralytics
 
-### Click
-- Command groups and subcommands (`@click.group()`)
-- Argument and option parsing
-- Help text generation
+**Testing:**
+- `pytest >= 6.0` (dev extra) - Test runner
+- `pytest-cov` (dev extra) - Coverage reporting
+- Test config: `pyproject.toml` `[tool.pytest.ini_options]`, testpaths = `["tests"]`
 
-### Rich
-- Console output with `Console()`
-- ASCII art logo display with `Panel` and `Text`
-- Help tables with `Table`
-- Progress bars with `Progress`, `SpinnerColumn`, `BarColumn`
-- Styled markdown rendering
+**Build & Publishing:**
+- `black` (dev extra) - Formatter; `[tool.black]` in `pyproject.toml`, line-length 88, target py37
+- `flake8` (dev extra) - Linter
+- `build` (dev extra) - PEP 517 build frontend
+- `twine` (dev extra) - PyPI upload
 
-### Requests
-- GitHub repository ZIP downloads
-- Streaming download with progress tracking
+## Key Dependencies
+
+**Always installed (core):**
+- `click >= 8.0.0` - The entire CLI surface; removing it breaks everything
+- `rich >= 12.0.0` - All output rendering; used in every module
+- `requests >= 2.25.0` - HTTP streaming downloads of GitHub ZIP archives in
+  `rhamaa/utils.py:download_github_repo()` and inline in `rhamaa/commands/cms/startapp.py`
+
+**In requirements.txt only (not in pyproject.toml):**
+- `gitpython >= 3.1.0` - Listed in `requirements.txt` but absent from `pyproject.toml` dependencies
+  and not imported in any scanned source file; likely leftover or future use
+
+## Standard Library Usage
+
+Key stdlib modules used across `rhamaa/`:
+- `pathlib.Path` - All file system navigation and file I/O
+- `subprocess` - Spawns `wagtail`, `django-admin`, `python manage.py`, `gunicorn`
+- `json` - Reads/writes `rhamaa-app.json` manifests and bundled JSON registries
+- `re` - Regex manipulation of Django `settings.py` and `urls.py` files (`rhamaa/config_utils.py`)
+- `zipfile` - ZIP extraction for downloaded templates and apps
+- `tempfile` - Temporary files/dirs for downloads and template builds
+- `shutil` - Directory copy/move/delete (copytree, rmtree, move)
+- `pkgutil` - `pkgutil.get_data()` to read bundled JSON/template data from the package
+- `dataclasses` - `AppManifest`, `ApplyResult`, `DependencyNode`, `DependencyResolver` model classes
+- `collections.deque` - Kahn's topological sort in `rhamaa/dependency_resolver.py`
+- `sys` - `sys.executable` to spawn manage.py subprocesses in `rhamaa/manifest_applier.py`
+
+## Configuration Files
+
+- `pyproject.toml` - Canonical project metadata, dependencies, black config, pytest config,
+  setuptools package list and package-data globs
+- `setup.py` - Legacy compat wrapper, duplicates `pyproject.toml` data
+- `rhamaa.egg-info/` - Generated by editable install (`pip install -e .`); not committed
+
+## Package Data (bundled inside the wheel)
+
+- `rhamaa/templates/cms/APPS_TEMPLATES/wagtail/*.tpl` - Wagtail app scaffold templates
+- `rhamaa/templates/cms/APPS_TEMPLATES/minimal/*.tpl` - Minimal Django app scaffold templates
+- `rhamaa/templates/cms/*.json` - Bundled registries: `app_list.json`, `app_template_list.json`,
+  `project_template_list.json`
+
+## Platform Requirements
+
+**Development:**
+- Python >= 3.7, pip
+- Editable install: `pip install -e .[dev]`
+
+**Runtime (for CLI users):**
+- For `cms start`: `wagtail` CLI must be on PATH (i.e. `pip install wagtail` in target env)
+- For `cms startapp` (minimal type): `django-admin` must be on PATH
+- For `cms run --prod`: `gunicorn` must be on PATH
+- For all `cms migrate/check/test/...` commands: `manage.py` must exist in cwd
+
+**Distribution:**
+- PyPI package name: `rhamaa`, version `0.4.2`
+- Entry point: `rhamaa = "rhamaa.cli:main"`
+- License: MIT
+
+---
+
+*Stack analysis: 2026-04-10*

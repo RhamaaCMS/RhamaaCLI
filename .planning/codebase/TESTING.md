@@ -1,12 +1,13 @@
-# Testing - RhamaaCLI
+# Testing
 
-## Current Testing Status
+**Analysis Date:** 2026-04-10
 
-### Test Framework
-- **Primary**: pytest >=6.0
-- **Coverage**: pytest-cov
-- **Configured in**: `pyproject.toml` (lines 105-109)
+## Test Framework
 
+**Runner:** pytest >= 6.0 (dev dependency in `pyproject.toml`)
+**Coverage:** pytest-cov (dev dependency in `pyproject.toml`)
+
+pytest configuration in `pyproject.toml`:
 ```toml
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -15,154 +16,93 @@ python_classes = ["Test*"]
 python_functions = ["test_*"]
 ```
 
-### Test Directory Structure
-```
-RhamaaCLI/
-└── tests/              # Configured but not visible in root listing
-    ├── __init__.py
-    ├── test_cli.py
-    ├── test_commands/
-    │   ├── test_start.py
-    │   ├── test_startapp.py
-    │   └── ...
-    └── test_utils.py
-```
-
-**Note**: Tests directory was not visible in initial exploration - needs verification.
-
-## Testing Gaps
-
-### Areas Without Tests
-
-| Component | Test Coverage | Risk Level |
-|-----------|---------------|------------|
-| `cli.py` | Unknown | Low (UI only) |
-| `start.py` | Unknown | High (core feature) |
-| `startapp.py` | Unknown | High (complex logic) |
-| `build.py` | Unknown | Medium |
-| `utils.py` | Unknown | High (network/IO) |
-| `server.py` | Unknown | Low |
-| `database.py` | Unknown | Low |
-| `management.py` | Unknown | Low |
-| `info.py` | Unknown | Low |
-
-### Critical Untested Paths
-
-1. **GitHub Download Failure** - `download_github_repo()` network error handling
-2. **ZIP Extraction Edge Cases** - Corrupted ZIPs, permission errors
-3. **Template Placeholder Substitution** - Complex replacement logic
-4. **Project Validation** - `check_wagtail_project()` edge cases
-5. **Subprocess Wrappers** - Django command failure scenarios
-
-## Recommended Test Cases
-
-### Unit Tests
-
-#### `test_utils.py`
-```python
-def test_check_wagtail_project_with_manage_py(tmp_path):
-    """Should return True if manage.py exists."""
-    (tmp_path / "manage.py").touch()
-    # Test implementation
-
-def test_download_github_repo_invalid_url():
-    """Should handle 404 errors gracefully."""
-    # Mock requests.get to return 404
-    # Assert returns None and prints error
-
-def test_extract_repo_to_apps_success(tmp_path):
-    """Should extract ZIP to apps/<app_name>/."""
-    # Create test ZIP, extract, verify structure
-```
-
-#### `test_startapp.py`
-```python
-def test_startapp_minimal_creates_structure(tmp_path):
-    """Should create apps/<name>/ with standard Django files."""
-    
-def test_startapp_wagtail_includes_blocks_py(tmp_path):
-    """Should include Wagtail-specific files."""
-    
-def test_startapp_prebuild_downloads_from_github(tmp_path):
-    """Should download and extract prebuilt app."""
-    # Mock github download
-```
-
-#### `test_start.py`
-```python
-def test_start_project_with_template_url(tmp_path):
-    """Should use custom template URL."""
-    
-def test_start_project_invalid_name():
-    """Should reject invalid Python identifiers."""
-```
-
-### Integration Tests
-
-```python
-def test_full_workflow_create_project_and_app(tmp_path):
-    """
-    1. Create project with rhamaa cms start
-    2. Create app with rhamaa cms startapp
-    3. Verify both are functional
-    """
-```
-
-## Testing Commands
-
-### Run All Tests
+**Install dev dependencies:**
 ```bash
+pip install -e ".[dev]"
+```
+
+## Test Structure
+
+**No `tests/` directory exists.** The `pyproject.toml` configures pytest to look in `tests/` but no such directory is present in the repository. There are zero test files anywhere in the project.
+
+The only testing artifacts present are:
+- `if __name__ == "__main__":` blocks in three library modules serving as manual smoke tests:
+  - `rhamaa/manifest.py` — creates an `AppManifest`, resolves placeholders, prints JSON
+  - `rhamaa/conflict_detector.py` — builds two conflicting manifests, runs `detect_all_conflicts()`
+  - `rhamaa/dependency_resolver.py` — builds a dependency graph, resolves install order
+
+The wagtail app template generator in `rhamaa/commands/cms/startapp.py` calls `create_tests_py()` which writes a `tests.py` stub into generated apps — but that stub is for the *target Django project*, not for the CLI itself.
+
+## Running Tests
+
+```bash
+# Run all tests (will find no tests currently)
 pytest
-```
 
-### Run with Coverage
-```bash
+# Run with coverage
 pytest --cov=rhamaa --cov-report=html
+
+# Run specific file (once tests exist)
+pytest tests/test_manifest.py -v
+
+# Run and show stdout
+pytest -s
 ```
 
-### Run Specific Test File
-```bash
-pytest tests/test_utils.py -v
-```
+## Coverage
 
-## CI/CD Testing
+**Current coverage: 0%** — no automated tests exist.
 
-### Recommended GitHub Actions Workflow
-```yaml
-name: Tests
-on: [push, pull_request]
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11', '3.12']
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
-      - run: pip install -e ".[dev]"
-      - run: pytest --cov=rhamaa
-```
+## Gaps
 
-## Code Quality Tools
+Every module is untested. Prioritized by complexity and risk:
 
-| Tool | Purpose | Config Location |
-|------|---------|-----------------|
-| black | Code formatting | `pyproject.toml` [tool.black] |
-| flake8 | Linting | Not configured (needs setup.cfg) |
-| pytest-cov | Coverage | `pyproject.toml` |
+**Critical — complex logic with high regression risk:**
 
-## Testing Debt
+- `rhamaa/manifest.py` — `AppManifest.from_dict()`, `resolve_placeholders()`, `validate()`, `to_dict()` round-trip. The placeholder system (`{app_name}`, `{app_class}`, `{app_upper}`) is a core feature with no test coverage.
+- `rhamaa/config_utils.py` — `SettingsParser` and `URLParser` regex-based file modification. These methods mutate Python source files in place. Edge cases: empty lists, already-present values, missing sections, indentation detection. Files: `rhamaa/config_utils.py`.
+- `rhamaa/dependency_resolver.py` — `DependencyResolver.resolve_dependencies()` uses Kahn's topological sort. Circular dependency detection via DFS in `check_circular_dependencies()`. Both are pure algorithms with no side effects — easy to unit test.
+- `rhamaa/conflict_detector.py` — `ConflictDetector.detect_all_conflicts()` aggregates five conflict types. Pure function logic, no I/O.
 
-### Immediate Actions Needed
-1. Verify `tests/` directory exists
-2. Add unit tests for `utils.py` functions
-3. Add integration tests for `start` and `startapp`
-4. Mock external network calls (GitHub downloads)
-5. Add test fixtures for template files
+**High — I/O and subprocess coordination:**
 
-### Estimated Coverage Needed
-- Minimum target: 70% code coverage
-- Critical paths: 90% coverage (utils.py, startapp.py, start.py)
+- `rhamaa/utils.py` — `download_github_repo()` makes HTTP requests; `extract_repo_to_apps()` manipulates the filesystem. Both need mocking for reliable tests.
+- `rhamaa/manifest_applier.py` — `ManifestApplier.apply_all()` orchestrates settings, URL, and post-install steps. `_run_post_install()` calls `subprocess.run()` for migrations and management commands.
+- `rhamaa/commands/cms/startapp.py` — `create_standard_app()`, `install_prebuilt_app()`, `install_template_app()`, `process_zip_template_files()`. Core user workflow.
+
+**Medium — CLI entry points:**
+
+- `rhamaa/cli.py` — Click group wiring, `show_logo_and_help()` output.
+- `rhamaa/commands/cms/start.py` — `start` command; template registry loading, URL validation, `wagtail start` subprocess invocation.
+- `rhamaa/commands/cms/management.py` — thin wrappers over `run_manage()`; low risk but untested.
+
+**Low — simple delegating wrappers:**
+
+- `rhamaa/commands/cms/utils.py` — `is_django_project()`, `run_manage()` (2 functions, trivial)
+- `rhamaa/commands/cms/server.py`, `database.py`, `info.py`, `build.py` — subprocess delegation commands
+
+## Recommended Test Approach
+
+**Use `tmp_path` fixture** (built into pytest) for all filesystem operations. No need for a separate temp directory library.
+
+**Mock network calls** with `unittest.mock.patch` on `requests.get` in `rhamaa/utils.py`.
+
+**Mock subprocess calls** with `unittest.mock.patch` on `subprocess.run` in command tests.
+
+**Start with pure-logic tests** (no mocking needed):
+- `AppManifest.from_dict()` / `to_dict()` round-trip
+- `AppManifest.validate()` — test required-field errors, URL path validation
+- `AppManifest.resolve_placeholders()` — verify `{app_name}`, `{app_class}`, `{app_upper}` substitution
+- `DependencyResolver.resolve_dependencies()` — linear chain, diamond, missing dep
+- `DependencyResolver.check_circular_dependencies()` — cycle vs. no cycle
+- `ConflictDetector.detect_url_conflicts()` — duplicate paths
+- `ConflictDetector.detect_setting_conflicts()` — same key, different values
+
+**Then filesystem tests with `tmp_path`:**
+- `SettingsParser.add_installed_app()` — write a minimal `settings.py`, parse, assert content
+- `SettingsParser.add_middleware()` with `position` variants
+- `URLParser.add_url_pattern()` — write minimal `urls.py`, parse, assert
+- `check_wagtail_project()` — create/omit `manage.py`, assert return value
+- `create_app_structure()` — verify directory and file tree created correctly
+
+**No CI pipeline is configured.** No `.github/workflows/` directory exists.

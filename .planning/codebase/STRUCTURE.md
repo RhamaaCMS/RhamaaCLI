@@ -1,141 +1,176 @@
-# Project Structure - RhamaaCLI
+# Project Structure
 
-## Directory Tree
+**Analysis Date:** 2026-04-10
+
+## Directory Layout
 
 ```
 RhamaaCLI/
-├── .planning/
-│   └── codebase/              # Generated analysis documents
-│       ├── STACK.md
-│       ├── INTEGRATIONS.md
-│       ├── ARCHITECTURE.md
-│       ├── STRUCTURE.md
-│       ├── CONVENTIONS.md
-│       ├── TESTING.md
-│       └── CONCERNS.md
-├── docs/                      # Documentation (26 items)
-├── scripts/                   # Utility scripts (4 items)
-├── rhamaa/                    # Main package
-│   ├── __init__.py            # Empty
-│   ├── __main__.py            # Entry point: python -m rhamaa
-│   ├── cli.py                 # Main CLI with ASCII logo
-│   ├── utils.py               # Shared utilities
+├── rhamaa/                          # Main installable package
+│   ├── __init__.py                  # Empty — namespace only
+│   ├── __main__.py                  # Enables: python -m rhamaa
+│   ├── cli.py                       # Root click group, ASCII logo, help display
+│   ├── utils.py                     # GitHub download, ZIP extraction, project detection
+│   ├── config_utils.py              # Regex-based settings.py / urls.py editor
+│   ├── manifest.py                  # AppManifest dataclasses + ManifestParser
+│   ├── manifest_applier.py          # ManifestApplier — orchestrates installation pipeline
+│   ├── dependency_resolver.py       # Topological sort for inter-app dependencies
+│   ├── conflict_detector.py         # Detect settings/middleware conflicts between apps
 │   ├── commands/
-│   │   ├── __init__.py        # Command registration
-│   │   └── cms/               # CMS command group
-│   │       ├── __init__.py    # CMS group definition
-│   │       ├── build.py       # build-template command (6976 bytes)
-│   │       ├── database.py    # migrate, makemigrations (622 bytes)
-│   │       ├── info.py        # status, info commands (3036 bytes)
-│   │       ├── management.py  # Django wrappers (1257 bytes)
-│   │       ├── server.py      # run command (2185 bytes)
-│   │       ├── start.py       # start command (7076 bytes)
-│   │       ├── startapp.py    # startapp command (12631 bytes)
-│   │       └── utils.py       # CMS utilities (614 bytes)
+│   │   ├── __init__.py              # Note: imports from .cms, not direct commands
+│   │   └── cms/
+│   │       ├── __init__.py          # Defines cms click.group, registers all subcommands
+│   │       ├── start.py             # rhamaa cms start — new Wagtail project
+│   │       ├── startapp.py          # rhamaa cms startapp — scaffold or install app
+│   │       ├── server.py            # rhamaa cms run — dev/prod server
+│   │       ├── database.py          # rhamaa cms migrate / makemigrations
+│   │       ├── management.py        # rhamaa cms check/test/collectstatic/shell/...
+│   │       ├── info.py              # rhamaa cms status / info
+│   │       ├── build.py             # rhamaa cms build-template
+│   │       └── utils.py             # run_manage() shared helper
 │   └── templates/
 │       └── cms/
-│           ├── APPS_TEMPLATES/
-│           │   ├── minimal/     # Django app .tpl files
-│           │   └── wagtail/     # Wagtail app .tpl files
-│           ├── app_list.json    # Prebuilt app registry
-│           └── project_template_list.json  # Project template registry
-├── .git/                      # Git repository
-├── .gitignore                 # Git ignore rules
-├── .pypirc.template           # PyPI config template
-├── LICENSE                    # MIT License (1090 bytes)
-├── MANIFEST.in                # Package manifest (201 bytes)
-├── README.md                  # User documentation (3744 bytes)
-├── DEPLOYMENT.md              # Deployment guide (3159 bytes)
-├── pyproject.toml             # Project config (2687 bytes)
-├── requirements.txt           # Dependencies (66 bytes)
-├── setup.py                   # Legacy setup (2212 bytes)
-└── rhamaa.egg-info/           # Package metadata
+│           ├── __init__.py
+│           ├── app_list.json             # Prebuilt app registry (mqtt, users, articles)
+│           ├── app_template_list.json    # App scaffold template registry
+│           ├── project_template_list.json # Project template registry (base, dev, iot, ...)
+│           └── APPS_TEMPLATES/
+│               ├── __init__.py
+│               ├── minimal/              # Bare Django app .tpl files
+│               │   ├── apps.py.tpl
+│               │   ├── models.py.tpl
+│               │   ├── views.py.tpl
+│               │   ├── admin.py.tpl
+│               │   ├── urls.py.tpl
+│               │   ├── settings.py.tpl
+│               │   └── tests.py.tpl
+│               └── wagtail/              # Wagtail-extended app .tpl files
+│                   ├── apps.py.tpl
+│                   ├── models.py.tpl
+│                   ├── views.py.tpl
+│                   ├── admin.py.tpl
+│                   ├── urls.py.tpl
+│                   ├── settings.py.tpl
+│                   ├── tests.py.tpl
+│                   ├── migrations/
+│                   │   └── 0001_initial.py.tpl
+│                   └── templates/
+│                       ├── index.html.tpl
+│                       └── example_page.html.tpl
+├── scripts/                         # Release and CI shell scripts (not imported)
+│   ├── build.sh                     # Build wheel/sdist
+│   ├── pre-release-check.sh         # Pre-release validation checklist
+│   ├── upload-prod.sh               # Upload to PyPI
+│   └── upload-test.sh               # Upload to TestPyPI
+├── docs/                            # User-facing documentation
+├── .planning/                       # GSD planning system
+│   ├── codebase/                    # Codebase analysis documents (this file)
+│   └── phases/                      # Phase plans
+│       ├── 01/
+│       └── 02/
+│           └── example-manifests/
+├── rhamaa.egg-info/                 # Generated by pip install -e ., do not edit
+├── pyproject.toml                   # Package metadata, dependencies, entry point
+├── setup.py                         # Legacy setuptools fallback
+├── requirements.txt                 # Minimal dev requirements
+├── MANIFEST.in                      # Explicit package data inclusions
+├── DEPLOYMENT.md                    # PyPI release instructions
+├── README.md                        # User documentation
+└── .pypirc.template                 # Template for PyPI credentials file (not .pypirc)
 ```
 
-## File Sizes and Significance
+## Key Files
 
-| File | Size | Significance |
-|------|------|--------------|
-| `startapp.py` | 12,631 bytes | Most complex command - handles app scaffolding with multiple modes |
-| `start.py` | 7,076 bytes | Project creation with template handling |
-| `build.py` | 6,976 bytes | Template reverse-engineering |
-| `cli.py` | 5,044 bytes | Main entry with ASCII art and help |
-| `utils.py` | 4,712 bytes | GitHub download and extraction utilities |
-| `info.py` | 3,036 bytes | Project status and info display |
-| `server.py` | 2,185 bytes | Dev/prod server management |
-| `setup.py` | 2,212 bytes | Legacy package configuration |
+### Package Entry Points
+- `rhamaa/cli.py` — defines `main` (root click group); registered as `rhamaa = "rhamaa.cli:main"` in `pyproject.toml`
+- `rhamaa/__main__.py` — imports `main` from `cli.py`; enables `python -m rhamaa`
 
-## Module Dependencies
+### Command Registration
+- `rhamaa/commands/cms/__init__.py` — single place where all `cms` subcommands are imported and registered; add new commands here
+
+### Manifest System (core pipeline for prebuilt app installs)
+- `rhamaa/manifest.py` — data model: `AppManifest`, `DjangoConfig`, `URLConfig`, `Dependencies`, `PostInstallConfig`, `ManifestParser`
+- `rhamaa/manifest_applier.py` — execution engine: `ManifestApplier`, `ApplyResult`
+- `rhamaa/dependency_resolver.py` — `DependencyResolver` (topological sort)
+- `rhamaa/conflict_detector.py` — `ConflictDetector`, `Conflict`, `SettingConflict`, `MiddlewareConflict`
+
+### Settings/URL Manipulation
+- `rhamaa/config_utils.py` — `SettingsParser`, `URLParser`, `auto_configure_app()`, `find_settings_file()`, `find_urls_file()`
+
+### Registries (bundled JSON, read via `pkgutil.get_data`)
+- `rhamaa/templates/cms/project_template_list.json` — project templates keyed by `base`, `dev`, `inertia-react`, `iot`
+- `rhamaa/templates/cms/app_list.json` — prebuilt apps keyed by `mqtt`, `users`, `articles`
+- `rhamaa/templates/cms/app_template_list.json` — scaffold templates for `startapp --template`
+
+### App Scaffold Templates
+- `rhamaa/templates/cms/APPS_TEMPLATES/minimal/*.tpl` — minimal Django app files
+- `rhamaa/templates/cms/APPS_TEMPLATES/wagtail/*.tpl` — Wagtail app files with migrations and HTML templates
+- Template variables: `{{app_name}}`, `{{app_title}}`, `{{app_class_name}}`, `{{app_name_upper}}`, `{{app_config_class}}`
+
+### Build / Release
+- `pyproject.toml` — canonical package config; `[tool.setuptools.package-data]` controls which non-`.py` files are bundled
+- `scripts/build.sh`, `scripts/upload-prod.sh`, `scripts/upload-test.sh` — manual release workflow
+- `scripts/pre-release-check.sh` — pre-release validation
+
+## Module Organization
+
+Modules are grouped by **role**, not by feature:
 
 ```
 rhamaa/
-├── __main__.py
-│   └── imports: cli (for `python -m rhamaa`)
-├── cli.py
-│   └── imports: commands.cms.cms, rich.*
-├── utils.py
-│   └── imports: os, shutil, tempfile, zipfile, pathlib, requests, rich.progress
-└── commands/
-    ├── __init__.py
-    │   └── imports: all cms submodules
-    └── cms/
-        ├── __init__.py
-        │   └── imports: all cms command modules
-        ├── start.py
-        │   └── imports: click, requests, json, pathlib, subprocess, rich
-        ├── startapp.py
-        │   └── imports: click, json, pathlib, shutil, requests, rich, utils
-        ├── build.py
-        │   └── imports: click, pathlib, zipfile, re, shutil, json
-        ├── server.py
-        │   └── imports: click, subprocess, sys, rich
-        ├── database.py
-        │   └── imports: click, subprocess
-        ├── management.py
-        │   └── imports: click, subprocess
-        ├── info.py
-        │   └── imports: click, pathlib, json, subprocess, rich
-        └── utils.py
-            └── imports: click, pathlib
+  cli.py               ← routing only (no business logic)
+  utils.py             ← I/O primitives (download, extract, detect)
+  config_utils.py      ← file editing primitives (settings, urls)
+  manifest.py          ← pure data model (parse + validate)
+  manifest_applier.py  ← orchestration (combines all primitives)
+  dependency_resolver  ← algorithm (graph operations only)
+  conflict_detector.py ← analysis (compare manifests)
+  commands/cms/        ← user-facing commands (use everything above)
+  templates/cms/       ← data assets (JSON + .tpl files)
 ```
 
-## Configuration Files
+The `commands/cms/` layer is the only layer that interacts with Click and Rich directly (except `cli.py`). All business logic lives in the modules above it.
 
-### Package Configuration (`pyproject.toml`)
-- Build system: setuptools
-- Project metadata: name, version (0.4.2), description
-- Dependencies: click, rich, requests
-- Optional extras: [cms], [cv], [dev]
-- Entry point: `rhamaa = "rhamaa.cli:main"`
-- Package data includes: `*.py`, templates, JSON files
+## Where to Add New Code
 
-### Template Registry Files
+**New `rhamaa cms` subcommand:**
+1. Create `rhamaa/commands/cms/<name>.py` with a `@click.command()` function
+2. Import and register in `rhamaa/commands/cms/__init__.py`:
+   ```python
+   from .<name> import <command_fn>
+   cms.add_command(<command_fn>)
+   ```
 
-**`project_template_list.json`**
-```json
-{
-  "base": {
-    "name": "RhamaaCMS Base",
-    "url": "https://github.com/RhamaaCMS/RhamaaCMS",
-    "branch": "main"
-  },
-  "dev": {
-    "name": "RhamaaCMS Dev",
-    "url": "https://github.com/RhamaaCMS/RhamaaCMS",
-    "branch": "dev"
-  }
-}
-```
+**New top-level command group (e.g., `rhamaa ml`):**
+1. Create `rhamaa/commands/<namespace>/` package with `__init__.py` defining a `click.group`
+2. Register in `rhamaa/cli.py`: `main.add_command(<group>)`
 
-**`app_list.json`**
-```json
-{
-  "mqtt": {
-    "name": "MQTT Apps",
-    "repo": "https://github.com/RhamaaCMS/rhamaa-mqtt",
-    "category": "IoT"
-  },
-  "users": { ... },
-  "articles": { ... }
-}
-```
+**New prebuilt app in registry:**
+- Add entry to `rhamaa/templates/cms/app_list.json`
+- Requires a new package release for users to see it
+
+**New project template:**
+- Add entry to `rhamaa/templates/cms/project_template_list.json`
+- Requires a new package release
+
+**New app scaffold template type:**
+- Create `rhamaa/templates/cms/APPS_TEMPLATES/<type>/` with `.tpl` files mirroring `minimal/` or `wagtail/`
+- Add a branch in `startapp.py:create_app_structure()` to handle the new type
+
+**New manifest field:**
+- Add dataclass field in `rhamaa/manifest.py` (`AppManifest` or a sub-config class)
+- Add handling in `rhamaa/manifest_applier.py:ManifestApplier.apply_all()`
+
+## Naming Conventions
+
+**Files:** `snake_case.py` throughout
+
+**Command modules:** named after the primary command they implement (`start.py` → `start` command, `startapp.py` → `startapp` command)
+
+**Template files:** `<django_filename>.tpl` (e.g., `models.py.tpl`, `urls.py.tpl`)
+
+**JSON registries:** `<thing>_list.json` (e.g., `app_list.json`, `project_template_list.json`)
+
+---
+
+*Structure analysis: 2026-04-10*
