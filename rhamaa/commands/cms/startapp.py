@@ -206,27 +206,26 @@ def install_prebuilt_app(app_name, prebuild_key, force, dry_run=False, backup=Fa
         TextColumn("[progress.description]{task.description}"),
         BarColumn(),
         TaskProgressColumn(),
-        console=console
+        console=console,
     ) as progress:
-        
         download_task = progress.add_task("Downloading...", total=100)
         zip_path = download_github_repo(
-            app_info['repository'], 
-            app_info['branch'], 
-            progress, 
-            download_task
+            app_info["repository"],
+            app_info["branch"],
+            progress,
+            download_task,
         )
-        
+
         if not zip_path:
             console.print("[red]Failed to download repository[/red]")
             return
-        
+
         extract_task = progress.add_task("Extracting...", total=100)
         success = extract_repo_to_apps(zip_path, app_name, progress, extract_task)
-        
+
         if success:
             console.print(f"[green]✓[/green] Successfully installed 'apps/{app_name}'")
-            console.print(f"[dim]Note: Install without --skip-config to use automatic manifest-based configuration[/dim]")
+            console.print("[dim]Note: Install without --skip-config to use automatic manifest-based configuration[/dim]")
 
 def create_standard_app(app_name, app_type, force, dry_run=False, backup=True, skip_config=False):
     """Create a standard Django app in apps/ directory."""
