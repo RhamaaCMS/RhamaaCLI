@@ -42,14 +42,10 @@ Creates Django apps or installs prebuilt apps:
 - `--type minimal` - Standard Django app (default)
 - `--type wagtail` - Wagtail app with models/templates
 - `--prebuild <key>` - Install from registry
-- `--template <key>` - Use app template from registry
-- `--template-url <url>` - Custom template ZIP URL
-- `--template-file <path>` - Local template ZIP or directory
 - `--dry-run` - Preview changes without applying
 - `--backup/--no-backup` - Create backup files (default: false)
 - `--skip-config` - Skip auto-configuration
 - `--list` - Show available prebuilt apps
-- `--list-templates` - Show available app templates
 
 **Auto-Configuration Features:**
 When creating apps, RhamaaCLI automatically:
@@ -120,10 +116,6 @@ rhamaa cms startapp devices --prebuild mqtt
 rhamaa cms start MySPA --template inertia-react
 rhamaa cms startapp dashboard
 
-# Use custom app template
-rhamaa cms startapp api --template api --dry-run  # Preview first
-rhamaa cms startapp api --template api             # Apply with auto-config
-
 # Custom template sources
 rhamaa cms start MyLocal --template-file ./dist/rhamaacms-template.zip
 rhamaa cms start Latest --template-url https://example.com/custom-template.zip
@@ -133,7 +125,6 @@ rhamaa cms build-template .
 
 # List available options
 rhamaa cms start --list
-rhamaa cms startapp --list-templates
 ```
 
 ## 🔧 After Installing Apps (Manual Steps - Auto-Config Disabled)
