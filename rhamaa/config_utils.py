@@ -90,14 +90,16 @@ class SettingsParser:
             end = match.group(3)
 
             lines = middleware_section.rstrip().split('\n')
+            # Always define indent (used by positioning branches too)
+            indent = '    '
             if not lines or not lines[0].strip():
                 # Empty list
-                new_middleware = f"\n    '{middleware_class}',\n"
+                new_middleware = f"\n{indent}'{middleware_class}',\n"
             else:
                 # Get indentation
                 last_line = lines[-1]
                 indent_match = re.match(r'^(\s*)', last_line)
-                indent = indent_match.group(1) if indent_match else '    '
+                indent = indent_match.group(1) if indent_match else indent
                 new_middleware = f"\n{indent}'{middleware_class}',"
 
             # Handle positioning
@@ -399,7 +401,7 @@ class URLParser:
         """
         path_prefix = prefix or app_name
         app_path = f"apps.{app_name}"
-        url_include = f"path('{path_prefix}/', include('{app_path}.urls'))"
+        url_include = f'path("{path_prefix}/", include("{app_path}.urls"))'
 
         # Check if already included
         if f"{app_path}.urls" in self.content:
@@ -468,13 +470,10 @@ class URLParser:
         
         # Build URL pattern
         if namespace:
-            url_pattern = f"path('{path}', include('{include_path}', namespace='{namespace}'))"
+            url_pattern = f'path("{path}", include("{include_path}", namespace="{namespace}"))'
         else:
-            url_pattern = f"path('{path}', include('{include_path}'))"
-        
-        # Add name comment if provided
-        if name:
-            url_pattern += f"  # {name}"
+            url_pattern = f'path("{path}", include("{include_path}"))'
+        comment = f"  # {name}" if name else ""
         
         # Find urlpatterns list
         pattern = r'(urlpatterns\s*=\s*\[)(.*?)(\])'
@@ -492,7 +491,8 @@ class URLParser:
             else:
                 indent = '    '
             
-            new_url = f"\n{indent}{url_pattern},"
+            # Keep a trailing comma (Black-friendly), place it before inline comments.
+            new_url = f"\n{indent}{url_pattern},{comment}"
             new_section = urls_section.rstrip() + new_url + '\n'
             return f"{start}{new_section}{end}"
         
