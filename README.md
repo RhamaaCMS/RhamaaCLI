@@ -24,6 +24,9 @@ rhamaa cms startapp blog
 # Install prebuilt app
 rhamaa cms startapp iot --prebuild mqtt
 
+# Install prebuilt app from a custom GitHub repository
+rhamaa cms startapp myiot --prebuild https://github.com/owner/repo --branch main
+
 # List available apps
 rhamaa cms startapp --list
 ```
@@ -37,11 +40,8 @@ Creates new Wagtail project using RhamaaCMS template.
 - `--local-dev` pakai template di `../RhamaaCMS`
 - `--list` tampilkan katalog template registry
 
-### `rhamaa cms startapp <name>`
-Creates Django apps or installs prebuilt apps:
-- `--type minimal` - Standard Django app (default)
-- `--type wagtail` - Wagtail app with models/templates
-- `--prebuild <key>` - Install from registry
+- `--prebuild <key|url>` - Install from registry or GitHub URL
+- `--branch <branch>` - GitHub branch to download for custom repo installs
 - `--dry-run` - Preview changes without applying
 - `--backup/--no-backup` - Create backup files (default: false)
 - `--skip-config` - Skip auto-configuration

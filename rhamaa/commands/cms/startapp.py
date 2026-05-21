@@ -8,9 +8,10 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
 from rich import box
-from rhamaa.utils import download_github_repo, extract_repo_to_apps
+from rhamaa.utils import download_github_repo, extract_repo_to_apps, is_github_repo_url
 from rhamaa.config_utils import auto_configure_app
 from rhamaa.manifest_applier import install_app_with_manifest
+from rhamaa.manifest import ManifestParser
 
 console = Console()
 
@@ -91,13 +92,14 @@ def is_app_available(app_name):
     show_default=True,
     help='App type for standard app scaffolding',
 )
-@click.option('--prebuild', type=str, default=None, help='Install a prebuilt app from registry (mqtt, users, articles)')
+@click.option('--prebuild', type=str, default=None, help='Install a prebuilt app from registry or GitHub repo URL')
 @click.option('--dry-run', is_flag=True, help='Preview changes without applying')
 @click.option('--backup/--no-backup', default=False, help='Create backup of modified files (default: disabled)')
 @click.option('--skip-config', is_flag=True, help='Skip auto-configuration')
+@click.option('--branch', type=str, default='main', help='GitHub branch to download for custom repo installs')
 @click.option('--list', 'list_apps', is_flag=True, help='List available prebuilt apps')
 @click.option('--force', '-f', is_flag=True, help='Overwrite existing app')
-def startapp(app_name, app_type, prebuild, dry_run, backup, skip_config, list_apps, force):
+def startapp(app_name, app_type, prebuild, dry_run, backup, skip_config, branch, list_apps, force):
     """Create a new Django app (standard) or install a prebuilt app."""
     
     # Show available apps
@@ -116,7 +118,7 @@ def startapp(app_name, app_type, prebuild, dry_run, backup, skip_config, list_ap
     
     # Handle prebuilt app installation
     if prebuild:
-        install_prebuilt_app(app_name, prebuild, force, dry_run, backup, skip_config)
+        install_prebuilt_app(app_name, prebuild, force, dry_run, backup, skip_config, branch)
         return
 
     # Create standard Django app (builtin scaffolding only)
@@ -160,12 +162,19 @@ def show_available_apps():
     
     console.print(f"\n[dim]Total: {len(registry)} apps available[/dim]")
 
-def install_prebuilt_app(app_name, prebuild_key, force, dry_run=False, backup=False, skip_config=False):
+def install_prebuilt_app(app_name, prebuild_key, force, dry_run=False, backup=False, skip_config=False, branch='main'):
     """Install a prebuilt app from registry using manifest system."""
-    if not is_app_available(prebuild_key):
+    app_dir = Path("apps") / app_name
+    custom_repo = is_github_repo_url(prebuild_key)
+    app_info = get_app_info(prebuild_key)
+
+    if not app_info and not custom_repo:
         console.print(f"[red]Error:[/red] Prebuilt app '{prebuild_key}' not found")
-        console.print("Use [cyan]rhamaa cms startapp --list[/cyan] to see available apps")
+        console.print("Use [cyan]rhamaa cms startapp --list[/cyan] to see available apps or pass a GitHub repo URL")
         return
+
+    if custom_repo:
+        app_info = {"repository": prebuild_key, "name": app_name}
     
     app_dir = Path("apps") / app_name
     if app_dir.exists() and not force:
@@ -179,12 +188,12 @@ def install_prebuilt_app(app_name, prebuild_key, force, dry_run=False, backup=Fa
             prebuild_key=prebuild_key,
             force=force,
             dry_run=dry_run,
-            backup=backup
+            backup=backup,
+            branch=branch
         )
         return
     
     # Fallback: Basic installation without manifest
-    app_info = get_app_info(prebuild_key)
     console.print(f"[cyan]Installing {app_info['name']} as '{app_name}'...[/cyan]")
     
     if dry_run:
@@ -202,7 +211,7 @@ def install_prebuilt_app(app_name, prebuild_key, force, dry_run=False, backup=Fa
         download_task = progress.add_task("Downloading...", total=100)
         zip_path = download_github_repo(
             app_info["repository"],
-            app_info["branch"],
+            branch,
             progress,
             download_task,
         )
@@ -215,6 +224,11 @@ def install_prebuilt_app(app_name, prebuild_key, force, dry_run=False, backup=Fa
         success = extract_repo_to_apps(zip_path, app_name, progress, extract_task)
 
         if success:
+            if custom_repo:
+                manifest_path = ManifestParser.find_manifest(app_dir)
+                if not manifest_path:
+                    console.print("[red]Error:[/red] Missing rhamaa-app.json manifest in repository. Custom GitHub app installs require a manifest file.")
+                    return
             console.print(f"[green]✓[/green] Successfully installed 'apps/{app_name}'")
             console.print("[dim]Note: Install without --skip-config to use automatic manifest-based configuration[/dim]")
 

@@ -16,6 +16,7 @@ from .config_utils import (
     SettingsParser, URLParser, 
     find_settings_file, find_urls_file, create_app_urls_py
 )
+from .utils import is_github_repo_url
 from .dependency_resolver import DependencyResolver
 from .conflict_detector import ConflictDetector, Conflict
 
@@ -363,7 +364,8 @@ def install_app_with_manifest(
     dry_run: bool = False,
     backup: bool = False,
     resolve_deps: bool = True,
-    ignore_conflicts: bool = False
+    ignore_conflicts: bool = False,
+    branch: str = 'main'
 ) -> ApplyResult:
     """
     High-level function to install an app with its manifest.
@@ -389,15 +391,18 @@ def install_app_with_manifest(
             errors=[f"App '{app_name}' already exists. Use --force to overwrite."]
         )
     
-    # Load app info from registry
-    registry = load_app_registry()
-    app_info = registry.get(prebuild_key)
-    
-    if not app_info:
-        return ApplyResult(
-            success=False,
-            errors=[f"Prebuilt app '{prebuild_key}' not found in registry."]
-        )
+    custom_repo = is_github_repo_url(prebuild_key)
+    app_info = None
+    if custom_repo:
+        app_info = {'repository': prebuild_key, 'name': app_name}
+    else:
+        registry = load_app_registry()
+        app_info = registry.get(prebuild_key)
+        if not app_info:
+            return ApplyResult(
+                success=False,
+                errors=[f"Prebuilt app '{prebuild_key}' not found in registry."]
+            )
     
     # Download the app
     console.print(f"[cyan]Installing {app_info['name']}...[/cyan]")
@@ -413,7 +418,7 @@ def install_app_with_manifest(
         # Download
         zip_path = download_github_repo(
             app_info['repository'],
-            app_info.get('branch', 'main')
+            branch
         )
         
         if not zip_path:
@@ -438,6 +443,11 @@ def install_app_with_manifest(
     manifest_path = ManifestParser.find_manifest(app_dir)
     
     if not manifest_path:
+        if custom_repo:
+            return ApplyResult(
+                success=False,
+                errors=["Missing rhamaa-app.json manifest in repository. Custom GitHub app installs require a rhamaa-app.json manifest at repo root."]
+            )
         # No manifest, use basic auto-config
         from .config_utils import auto_configure_app
         changes = auto_configure_app(app_name, project_path, dry_run, backup)

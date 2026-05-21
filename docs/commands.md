@@ -89,7 +89,7 @@ rhamaa cms startapp <app_name> [OPTIONS]
 | Option | Description |
 |--------|-------------|
 | `--type <type>` | App template type: `minimal` or `wagtail` (default: minimal) |
-| `--prebuild <key>` | Install prebuilt app from registry |
+| `--prebuild <key|url>` | Install prebuilt app from registry or GitHub repo URL |
 | `--dry-run` | Preview changes without applying |
 | `--backup` | Create backup of modified files |
 | `--no-backup` | Don't create backup (default) |
@@ -105,8 +105,14 @@ rhamaa cms startapp blog
 # Create Wagtail app
 rhamaa cms startapp blog --type wagtail
 
-# Install prebuilt app
+### `rhamaa cms startapp`
+```bash
+# Install prebuilt app from registry
 rhamaa cms startapp myusers --prebuild users
+
+# Install prebuilt app from GitHub repository
+rhamaa cms startapp myiot --prebuild https://github.com/owner/repo --branch main
+```
 
 # Preview installation
 rhamaa cms startapp myusers --prebuild users --dry-run

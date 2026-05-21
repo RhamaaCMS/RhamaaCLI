@@ -7,6 +7,7 @@ import shutil
 import tempfile
 import zipfile
 from pathlib import Path
+from urllib.parse import urlparse
 import requests
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
@@ -54,6 +55,21 @@ def _pick_extracted_root(extract_dir: Path) -> Path:
     if len(entries) == 1 and entries[0].is_dir():
         return entries[0]
     return extract_dir
+
+
+def normalize_github_repo_url(repo_url: str) -> str:
+    repo_url = repo_url.rstrip('/')
+    if repo_url.endswith('.git'):
+        repo_url = repo_url[:-4]
+    return repo_url
+
+
+def is_github_repo_url(repo_url: str) -> bool:
+    try:
+        parsed = urlparse(repo_url)
+        return parsed.scheme in {"http", "https"} and parsed.netloc.lower().endswith("github.com")
+    except Exception:
+        return False
 
 
 def install_dir_to_apps(
@@ -155,9 +171,7 @@ def download_github_repo(repo_url, branch="main", progress=None, task_id=None):
         str: Path to downloaded ZIP file
     """
     # Convert GitHub URL to ZIP download URL
-    if repo_url.endswith('.git'):
-        repo_url = repo_url[:-4]
-
+    repo_url = normalize_github_repo_url(repo_url)
     zip_url = f"{repo_url}/archive/refs/heads/{branch}.zip"
 
     try:
