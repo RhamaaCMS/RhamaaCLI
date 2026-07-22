@@ -66,13 +66,15 @@ class Dependencies:
     apps: List[str] = field(default_factory=list)
     packages: List[str] = field(default_factory=list)
     optional_apps: List[str] = field(default_factory=list)
+    capabilities: List[str] = field(default_factory=list)
     
     @classmethod
     def from_dict(cls, data: dict) -> "Dependencies":
         return cls(
             apps=data.get("apps", []),
             packages=data.get("packages", []),
-            optional_apps=data.get("optional_apps", [])
+            optional_apps=data.get("optional_apps", []),
+            capabilities=data.get("capabilities", []),
         )
 
 
@@ -94,13 +96,15 @@ class PostInstallConfig:
                 normalized_commands.append({
                     "command": cmd,
                     "args": [],
-                    "kwargs": {}
+                    "kwargs": {},
+                    "run_on_install": False,
                 })
             else:
                 normalized_commands.append({
                     "command": cmd.get("command", ""),
                     "args": cmd.get("args", []),
-                    "kwargs": cmd.get("kwargs", {})
+                    "kwargs": cmd.get("kwargs", {}),
+                    "run_on_install": cmd.get("run_on_install", False),
                 })
         
         return cls(
@@ -119,6 +123,7 @@ class DjangoConfig:
     templates: Optional[TemplateConfig] = None
     auth_backends: List[str] = field(default_factory=list)
     settings: Dict[str, Any] = field(default_factory=dict)
+    app_label: str = ""
     
     @classmethod
     def from_dict(cls, data: dict) -> "DjangoConfig":
@@ -136,7 +141,8 @@ class DjangoConfig:
             middleware=middleware,
             templates=templates,
             auth_backends=data.get("auth_backends", []),
-            settings=data.get("settings", {})
+            settings=data.get("settings", {}),
+            app_label=data.get("app_label", ""),
         )
 
 
@@ -148,6 +154,36 @@ class StaticfilesConfig:
     @classmethod
     def from_dict(cls, data: dict) -> "StaticfilesConfig":
         return cls(dirs=data.get("dirs", []))
+
+
+@dataclass
+class EnvironmentVariable:
+    key: str
+    default: Any = ""
+    required: bool = False
+    description: str = ""
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "EnvironmentVariable":
+        return cls(
+            key=data.get("key", ""),
+            default=data.get("default", ""),
+            required=data.get("required", False),
+            description=data.get("description", ""),
+        )
+
+
+@dataclass
+class EnvironmentConfig:
+    file: str = ".env.example"
+    variables: List[EnvironmentVariable] = field(default_factory=list)
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "EnvironmentConfig":
+        return cls(
+            file=data.get("file", ".env.example"),
+            variables=[EnvironmentVariable.from_dict(item) for item in data.get("variables", [])],
+        )
 
 
 @dataclass
@@ -167,12 +203,14 @@ class AppManifest:
     version: str = "1.0.0"
     description: str = ""
     author: str = ""
+    package_name: str = ""
     
     # Configuration sections
     django: DjangoConfig = field(default_factory=DjangoConfig)
     urls: List[URLConfig] = field(default_factory=list)
     dependencies: Dependencies = field(default_factory=Dependencies)
     staticfiles: Optional[StaticfilesConfig] = None
+    env: Optional[EnvironmentConfig] = None
     post_install: PostInstallConfig = field(default_factory=PostInstallConfig)
     
     @classmethod
@@ -190,6 +228,7 @@ class AppManifest:
         deps_data = data.get("dependencies", {})
         static_data = data.get("staticfiles")
         post_data = data.get("post_install", {})
+        env_data = data.get("env")
         
         return cls(
             schema_version=data.get("schema_version", "1.0.0"),
@@ -198,10 +237,12 @@ class AppManifest:
             version=data.get("version", "1.0.0"),
             description=data.get("description", ""),
             author=data.get("author", ""),
+            package_name=data.get("package_name", ""),
             django=DjangoConfig.from_dict(django_data),
             urls=[URLConfig.from_dict(u) for u in urls_data],
             dependencies=Dependencies.from_dict(deps_data),
             staticfiles=StaticfilesConfig.from_dict(static_data) if static_data else None,
+            env=EnvironmentConfig.from_dict(env_data) if env_data else None,
             post_install=PostInstallConfig.from_dict(post_data)
         )
     
@@ -249,6 +290,7 @@ class AppManifest:
             "version": self.version,
             "description": self.description,
             "author": self.author,
+            "package_name": self.package_name,
             "django": {
                 "installed_apps": self.django.installed_apps,
                 "middleware": [
@@ -264,7 +306,8 @@ class AppManifest:
                     "context_processors": self.django.templates.context_processors
                 } if self.django.templates else None,
                 "auth_backends": self.django.auth_backends,
-                "settings": self.django.settings
+                "settings": self.django.settings,
+                "app_label": self.django.app_label,
             },
             "urls": [
                 {
@@ -278,11 +321,24 @@ class AppManifest:
             "dependencies": {
                 "apps": self.dependencies.apps,
                 "packages": self.dependencies.packages,
-                "optional_apps": self.dependencies.optional_apps
+                "optional_apps": self.dependencies.optional_apps,
+                "capabilities": self.dependencies.capabilities,
             },
             "staticfiles": {
                 "dirs": self.staticfiles.dirs
             } if self.staticfiles else None,
+            "env": {
+                "file": self.env.file,
+                "variables": [
+                    {
+                        "key": item.key,
+                        "default": item.default,
+                        "required": item.required,
+                        "description": item.description,
+                    }
+                    for item in self.env.variables
+                ],
+            } if self.env else None,
             "post_install": {
                 "migrations": self.post_install.migrations,
                 "fixtures": self.post_install.fixtures,
@@ -303,6 +359,8 @@ class AppManifest:
             errors.append("Missing required field: name")
         if not self.slug:
             errors.append("Missing required field: slug")
+        if self.package_name and not self.package_name.isidentifier():
+            errors.append("package_name must be a valid Python identifier")
         
         # Validate URLs
         for i, url in enumerate(self.urls):
@@ -323,6 +381,13 @@ class AppManifest:
         for i, app in enumerate(self.django.installed_apps):
             if not app:
                 errors.append(f"installed_apps[{i}]: empty value")
+        if self.env:
+            env_path = Path(self.env.file)
+            if env_path.is_absolute() or ".." in env_path.parts:
+                errors.append("env.file must stay inside project directory")
+            for i, variable in enumerate(self.env.variables):
+                if not variable.key or not variable.key.isidentifier():
+                    errors.append(f"env.variables[{i}]: invalid key")
         
         return errors
 

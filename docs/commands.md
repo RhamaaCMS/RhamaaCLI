@@ -130,7 +130,7 @@ rhamaa cms startapp --list
 **Available Prebuilt Apps:**
 | App | Category | Description |
 |-----|----------|-------------|
-| `mqtt` | IoT | MQTT device management |
+| `iot` | IoT | Connected-device extension for `base-iot` |
 | `users` | Authentication | User management system |
 | `articles` | Content | Article/blog system |
 
@@ -265,8 +265,8 @@ rhamaa cms startapp myusers --prebuild users
 # Install blog app
 rhamaa cms startapp blog --type wagtail
 
-# Install MQTT for IoT
-rhamaa cms startapp devices --prebuild mqtt
+# Install IoT domain extension (package name is case-sensitive)
+rhamaa cms startapp IoT --prebuild iot
 
 # Run migrations for all
 rhamaa cms migrate

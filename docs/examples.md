@@ -232,7 +232,7 @@ rhamaa cms start MyIoT --template iot
 cd MyIoT
 
 # Install MQTT app
-rhamaa cms startapp devices --prebuild mqtt
+rhamaa cms startapp IoT --prebuild iot
 
 # Configure MQTT (edit settings)
 # Add: MQTT_BROKER_HOST, MQTT_BROKER_PORT, etc.
@@ -241,7 +241,7 @@ rhamaa cms startapp devices --prebuild mqtt
 rhamaa cms migrate
 
 # Start Celery (if using)
-celery -A MyIoT worker -l info
+python manage.py mqtt_worker
 
 # Start development server
 rhamaa cms run

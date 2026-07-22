@@ -22,7 +22,7 @@ cd MyProject
 rhamaa cms startapp blog
 
 # Install prebuilt app
-rhamaa cms startapp iot --prebuild mqtt
+rhamaa cms startapp IoT --prebuild iot
 
 # Install prebuilt app from a custom GitHub repository
 rhamaa cms startapp myiot --prebuild https://github.com/owner/repo --branch main
@@ -97,7 +97,7 @@ Development and production server management:
 
 | Key | Name | Category |
 |-----|------|----------|
-| `mqtt` | MQTT Apps | IoT |
+| `iot` | Rhamaa IoT (`apps.IoT`) | IoT |
 | `users` | User Management | Authentication |
 | `articles` | Article System | Content |
 
@@ -110,7 +110,7 @@ rhamaa cms startapp articles --prebuild articles
 
 # IoT dashboard with IoT template
 rhamaa cms start IoTDash --template iot
-rhamaa cms startapp devices --prebuild mqtt
+rhamaa cms startapp IoT --prebuild iot
 
 # Inertia + React SPA project
 rhamaa cms start MySPA --template inertia-react

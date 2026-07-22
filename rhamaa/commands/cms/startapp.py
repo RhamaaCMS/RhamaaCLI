@@ -96,7 +96,7 @@ def is_app_available(app_name):
 @click.option('--dry-run', is_flag=True, help='Preview changes without applying')
 @click.option('--backup/--no-backup', default=False, help='Create backup of modified files (default: disabled)')
 @click.option('--skip-config', is_flag=True, help='Skip auto-configuration')
-@click.option('--branch', type=str, default='main', help='GitHub branch to download for custom repo installs')
+@click.option('--branch', type=str, default=None, help='Override repository branch (custom repos default to main)')
 @click.option('--list', 'list_apps', is_flag=True, help='List available prebuilt apps')
 @click.option('--force', '-f', is_flag=True, help='Overwrite existing app')
 def startapp(app_name, app_type, prebuild, dry_run, backup, skip_config, branch, list_apps, force):
@@ -162,7 +162,7 @@ def show_available_apps():
     
     console.print(f"\n[dim]Total: {len(registry)} apps available[/dim]")
 
-def install_prebuilt_app(app_name, prebuild_key, force, dry_run=False, backup=False, skip_config=False, branch='main'):
+def install_prebuilt_app(app_name, prebuild_key, force, dry_run=False, backup=False, skip_config=False, branch=None):
     """Install a prebuilt app from registry using manifest system."""
     app_dir = Path("apps") / app_name
     custom_repo = is_github_repo_url(prebuild_key)
@@ -175,6 +175,14 @@ def install_prebuilt_app(app_name, prebuild_key, force, dry_run=False, backup=Fa
 
     if custom_repo:
         app_info = {"repository": prebuild_key, "name": app_name}
+
+    required_name = app_info.get("install_name")
+    if required_name and app_name != required_name:
+        console.print(
+            f"[red]Error:[/red] '{prebuild_key}' must be installed as "
+            f"[bold]{required_name}[/bold] (case-sensitive)."
+        )
+        return
     
     app_dir = Path("apps") / app_name
     if app_dir.exists() and not force:
@@ -191,6 +199,9 @@ def install_prebuilt_app(app_name, prebuild_key, force, dry_run=False, backup=Fa
             backup=backup,
             branch=branch
         )
+        if not result.success:
+            detail = "; ".join(result.errors) or "Unknown installation error"
+            raise click.ClickException(detail)
         return
     
     # Fallback: Basic installation without manifest
@@ -211,7 +222,7 @@ def install_prebuilt_app(app_name, prebuild_key, force, dry_run=False, backup=Fa
         download_task = progress.add_task("Downloading...", total=100)
         zip_path = download_github_repo(
             app_info["repository"],
-            branch,
+            branch or app_info.get("branch") or "main",
             progress,
             download_task,
         )

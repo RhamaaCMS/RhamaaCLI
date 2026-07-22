@@ -85,6 +85,10 @@ class ManifestApplier:
         warnings = []
         
         try:
+            compatibility_errors = self._check_project_compatibility()
+            if compatibility_errors:
+                return ApplyResult(success=False, errors=compatibility_errors)
+
             with Progress(
                 SpinnerColumn(),
                 TextColumn("[progress.description]{task.description}"),
@@ -99,6 +103,11 @@ class ManifestApplier:
                         self.changes.append(f"Modified settings: {self.settings_file.name}")
                 else:
                     warnings.append("Could not find settings file")
+                progress.remove_task(task)
+
+                task = progress.add_task("Applying environment defaults...", total=None)
+                if self._apply_env(dry_run, backup):
+                    self.changes.append(f"Modified environment template: {self.manifest.env.file}")
                 progress.remove_task(task)
                 
                 # 2. Apply URL configuration
@@ -186,9 +195,10 @@ class ManifestApplier:
         
         # 5. Set custom settings
         for key, value in self.manifest.django.settings.items():
-            if parser.set_setting(key, value):
+            setting_value = value.get("default") if isinstance(value, dict) and "default" in value else value
+            if parser.set_setting(key, setting_value):
                 modified = True
-                self.changes.append(f"  + Set {key} = {value}")
+                self.changes.append(f"  + Set {key} = {setting_value}")
         
         # 6. Add staticfiles dirs
         if self.manifest.staticfiles and self.manifest.staticfiles.dirs:
@@ -205,6 +215,29 @@ class ManifestApplier:
             parser.write(backup=backup)
         
         return modified
+
+    def _check_project_compatibility(self) -> List[str]:
+        """Validate host-app requirements before changing project files."""
+        errors = []
+        if self.manifest.django.installed_apps and not self.settings_file:
+            errors.append("Could not find Django settings file.")
+            return errors
+
+        settings_content = self.settings_file.read_text(encoding="utf-8") if self.settings_file else ""
+        for dependency in self.manifest.dependencies.apps:
+            # Dotted dependencies are host Django apps, not registry keys.
+            if "." in dependency and dependency not in settings_content:
+                errors.append(
+                    f"Required Django app '{dependency}' is missing. "
+                    "Install this app on a compatible RhamaaCMS template."
+                )
+        for capability in self.manifest.dependencies.capabilities:
+            if capability not in settings_content:
+                errors.append(
+                    f"Project capability '{capability}' is missing. "
+                    "Use the required RhamaaCMS project template/branch."
+                )
+        return errors
     
     def _apply_urls(self, dry_run: bool, backup: bool) -> bool:
         """Apply URL configurations from manifest."""
@@ -235,6 +268,33 @@ class ManifestApplier:
             parser.write(backup=backup)
         
         return modified
+
+    def _apply_env(self, dry_run: bool, backup: bool) -> bool:
+        if not self.manifest.env or not self.manifest.env.variables:
+            return False
+        project_root = self.project_path.resolve()
+        env_path = (project_root / self.manifest.env.file).resolve()
+        if env_path != project_root and project_root not in env_path.parents:
+            raise RuntimeError("Environment template path escapes project directory.")
+        content = env_path.read_text(encoding="utf-8") if env_path.exists() else ""
+        additions = []
+        for variable in self.manifest.env.variables:
+            if any(line.split("=", 1)[0].strip() == variable.key for line in content.splitlines() if "=" in line):
+                continue
+            if variable.description:
+                additions.append(f"# {variable.description}")
+            value = "" if variable.default is None else str(variable.default)
+            additions.append(f"{variable.key}={value}")
+        if not additions:
+            return False
+        if not dry_run:
+            if backup and env_path.exists():
+                backup_path = env_path.with_suffix(env_path.suffix + ".bak")
+                backup_path.write_text(content, encoding="utf-8")
+                self.backup_files.append(backup_path)
+            separator = "\n" if content.endswith("\n") or not content else "\n\n"
+            env_path.write_text(content + separator + "\n".join(additions) + "\n", encoding="utf-8")
+        return True
     
     def _run_post_install(self) -> List[str]:
         """Run post-installation tasks."""
@@ -244,31 +304,25 @@ class ManifestApplier:
         if not post:
             return changes
         
-        # 1. Run migrations
+        # 1. Apply migrations shipped by the prebuilt app. Schema ownership
+        # stays in app repository; installer must never generate migrations.
         if post.migrations:
-            try:
-                result = subprocess.run(
-                    [sys.executable, "manage.py", "makemigrations", self.app_name],
-                    cwd=self.project_path,
-                    capture_output=True,
-                    text=True,
-                    check=False
-                )
-                if result.returncode == 0:
-                    changes.append(f"  ✓ Created migrations for {self.app_name}")
-                
-                # Run migrate
-                result = subprocess.run(
-                    [sys.executable, "manage.py", "migrate"],
-                    cwd=self.project_path,
-                    capture_output=True,
-                    text=True,
-                    check=False
-                )
-                if result.returncode == 0:
-                    changes.append("  ✓ Applied migrations")
-            except Exception as e:
-                changes.append(f"  ⚠ Migration warning: {e}")
+            app_label = self.manifest.django.app_label
+            command = [sys.executable, "manage.py", "migrate"]
+            if app_label:
+                command.append(app_label)
+            result = subprocess.run(
+                command,
+                cwd=self.project_path,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if result.returncode != 0:
+                detail = (result.stderr or result.stdout).strip()
+                raise RuntimeError(f"Migration failed: {detail}")
+            suffix = f" for {app_label}" if app_label else ""
+            changes.append(f"  ✓ Applied migrations{suffix}")
         
         # 2. Load fixtures
         for fixture_path in post.fixtures:
@@ -293,6 +347,8 @@ class ManifestApplier:
         
         # 3. Run management commands
         for cmd_config in post.management_commands:
+            if not cmd_config.get('run_on_install', False):
+                continue
             try:
                 cmd = cmd_config.get('command', '')
                 args = cmd_config.get('args', [])
@@ -316,9 +372,10 @@ class ManifestApplier:
                 if result.returncode == 0:
                     changes.append(f"  ✓ Ran command: {cmd}")
                 else:
-                    changes.append(f"  ⚠ Command failed: {cmd}")
+                    detail = (result.stderr or result.stdout).strip()
+                    raise RuntimeError(f"Command failed: {cmd}: {detail}")
             except Exception as e:
-                changes.append(f"  ⚠ Command error: {e}")
+                raise RuntimeError(f"Post-install command error: {e}") from e
         
         # 4. Show messages
         if post.messages:
@@ -365,7 +422,7 @@ def install_app_with_manifest(
     backup: bool = False,
     resolve_deps: bool = True,
     ignore_conflicts: bool = False,
-    branch: str = 'main'
+    branch: Optional[str] = None
 ) -> ApplyResult:
     """
     High-level function to install an app with its manifest.
@@ -416,10 +473,8 @@ def install_app_with_manifest(
         task = progress.add_task("Downloading...", total=None)
         
         # Download
-        zip_path = download_github_repo(
-            app_info['repository'],
-            branch
-        )
+        selected_branch = branch or app_info.get('branch') or 'main'
+        zip_path = download_github_repo(app_info['repository'], selected_branch)
         
         if not zip_path:
             return ApplyResult(
@@ -464,6 +519,15 @@ def install_app_with_manifest(
         return ApplyResult(
             success=False,
             errors=errors
+        )
+
+    if manifest.package_name and manifest.package_name != app_name:
+        return ApplyResult(
+            success=False,
+            errors=[
+                f"This app must be installed as '{manifest.package_name}' "
+                f"(received '{app_name}')."
+            ],
         )
     
     # Resolve placeholders

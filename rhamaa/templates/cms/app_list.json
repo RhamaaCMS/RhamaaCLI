@@ -1,9 +1,10 @@
 {
-  "mqtt": {
-    "name": "MQTT Apps",
-    "description": "IoT MQTT integration for Wagtail",
-    "repository": "https://github.com/RhamaaCMS/mqtt-apps",
+  "iot": {
+    "name": "Rhamaa IoT",
+    "description": "Connected-device domain extension for RhamaaCMS base-iot",
+    "repository": "https://github.com/rhamaa/iot-apps",
     "branch": "main",
+    "install_name": "IoT",
     "category": "IoT"
   },
   "users": {
