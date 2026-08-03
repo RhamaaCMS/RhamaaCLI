@@ -454,7 +454,8 @@ def install_app_with_manifest(
         app_info = {'repository': prebuild_key, 'name': app_name}
     else:
         registry = load_app_registry()
-        app_info = registry.get(prebuild_key)
+        registry_key = prebuild_key.lower()
+        app_info = registry.get(registry_key)
         if not app_info:
             return ApplyResult(
                 success=False,
@@ -555,6 +556,23 @@ def install_app_with_manifest(
     result = applier.apply_all(dry_run, backup)
     
     if result.success:
+        if not dry_run and not custom_repo:
+            try:
+                from .app_versioning import record_install
+
+                record_install(
+                    project_path,
+                    registry_key=registry_key,
+                    app_name=app_name,
+                    manifest=manifest,
+                    repository=app_info["repository"],
+                    branch=selected_branch,
+                )
+                result.changes.append(
+                    f"Recorded app version {manifest.version} in .rhamaa/apps.json"
+                )
+            except (OSError, ValueError) as exc:
+                result.warnings.append(f"Could not record app version state: {exc}")
         console.print(f"[green]✓[/green] Successfully installed '{app_name}'")
         for change in result.changes:
             console.print(f"  {change}")

@@ -359,6 +359,12 @@ class AppManifest:
             errors.append("Missing required field: name")
         if not self.slug:
             errors.append("Missing required field: slug")
+        try:
+            from .versions import parse_version
+
+            parse_version(self.version)
+        except ValueError as exc:
+            errors.append(str(exc))
         if self.package_name and not self.package_name.isidentifier():
             errors.append("package_name must be a valid Python identifier")
         

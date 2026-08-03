@@ -153,10 +153,11 @@ def show_available_apps():
         table = Table(show_header=True, header_style="bold blue", box=box.SIMPLE)
         table.add_column("Key", style="bold cyan", width=12)
         table.add_column("Name", style="white", width=20)
+        table.add_column("Current", style="green", width=10)
         table.add_column("Description", style="dim", min_width=30)
         
         for key, info in apps:
-            table.add_row(key, info['name'], info['description'])
+            table.add_row(key, info['name'], info.get('version', '?'), info['description'])
         
         console.print(table)
     

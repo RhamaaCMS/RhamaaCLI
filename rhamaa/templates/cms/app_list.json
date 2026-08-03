@@ -4,6 +4,7 @@
     "description": "Connected-device domain extension for RhamaaCMS base-iot",
     "repository": "https://github.com/rhamaa/iot-apps",
     "branch": "main",
+    "version": "2.1.0",
     "install_name": "IoT",
     "category": "IoT"
   },
@@ -12,6 +13,7 @@
     "description": "Advanced user management system",
     "repository": "https://github.com/RhamaaCMS/user-apps",
     "branch": "main",
+    "version": "1.0.0",
     "category": "Authentication"
   },
   "articles": {
@@ -19,6 +21,25 @@
     "description": "Blog and article management",
     "repository": "https://github.com/RhamaaCMS/article-apps",
     "branch": "main",
+    "version": "1.0.0",
     "category": "Content"
+  },
+  "influx": {
+    "name": "InfluxDB Manager",
+    "description": "InfluxDB data management and Wagtail dashboard",
+    "repository": "https://github.com/rhamaa/influx-apps",
+    "branch": "main",
+    "version": "1.0.0",
+    "install_name": "influx",
+    "category": "IoT"
+  },
+  "whitelabeling": {
+    "name": "Whitelabeling",
+    "description": "RhamaaCMS branding and whitelabel configuration",
+    "repository": "https://github.com/rhamaa/whitelabeling-apps",
+    "branch": "main",
+    "version": "1.0.0",
+    "install_name": "whitelabeling",
+    "category": "Administration"
   }
 }

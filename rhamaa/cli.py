@@ -46,6 +46,7 @@ HELP_COMMANDS = [
     ("cms startapp <AppName>", "[yellow]Create a new Django app (minimal or wagtail)[/yellow]"),
     ("cms startapp --list", "[blue]List available prebuilt apps[/blue]"),
     ("cms startapp <AppName> --prebuild <key>", "[cyan]Install prebuilt app[/cyan]"),
+    ("cms apps update <key>", "[cyan]Update registered app to current version[/cyan]"),
     ("cms run", "[bright_green]Start development server[/bright_green]"),
     ("cms check", "[bright_yellow]Run system checks[/bright_yellow]"),
     ("cms status", "[bright_blue]Show project status[/bright_blue]"),

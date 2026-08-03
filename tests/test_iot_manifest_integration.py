@@ -3,6 +3,7 @@ import sys
 import tempfile
 import types
 import unittest
+import zipfile
 from pathlib import Path
 from unittest.mock import patch
 
@@ -47,7 +48,8 @@ if "requests" not in sys.modules:
     sys.modules["requests"] = types.ModuleType("requests")
 
 from rhamaa.manifest import ManifestParser
-from rhamaa.manifest_applier import ManifestApplier
+from rhamaa.app_versioning import parse_version, update_registered_app
+from rhamaa.manifest_applier import ApplyResult, ManifestApplier
 
 
 class IoTManifestIntegrationTests(unittest.TestCase):
@@ -100,6 +102,9 @@ class IoTManifestIntegrationTests(unittest.TestCase):
         registry = json.loads(registry_path.read_text(encoding="utf-8"))
         self.assertNotIn("mqtt", registry)
         self.assertEqual(registry["iot"]["install_name"], "IoT")
+        self.assertEqual(registry["iot"]["version"], "2.1.0")
+        self.assertIn("influx", registry)
+        self.assertIn("whitelabeling", registry)
 
     def test_incompatible_template_is_rejected_before_changes(self):
         manifest_path = Path(__file__).parents[2] / "Apps" / "IoT" / "rhamaa-app.json"
@@ -115,6 +120,106 @@ class IoTManifestIntegrationTests(unittest.TestCase):
             self.assertFalse(result.success)
             self.assertTrue(any("apps.mqtt" in error for error in result.errors))
             self.assertNotIn("apps.IoT", settings_path.read_text(encoding="utf-8"))
+
+
+class AppVersioningTests(unittest.TestCase):
+    def _manifest(self, version: str) -> dict:
+        return {
+            "schema_version": "1.0.0",
+            "name": "Rhamaa IoT",
+            "slug": "iot",
+            "version": version,
+            "package_name": "IoT",
+            "django": {"installed_apps": ["apps.IoT"]},
+            "urls": [],
+            "dependencies": {"apps": [], "packages": []},
+            "post_install": {"migrations": False},
+        }
+
+    def test_versions_are_numeric_and_two_part_versions_are_supported(self):
+        self.assertEqual(parse_version("0.7"), (0, 7, 0))
+        self.assertLess(parse_version("0.5"), parse_version("0.7"))
+        with self.assertRaises(ValueError):
+            parse_version("latest")
+
+    def test_update_replaces_code_backs_up_old_app_and_records_state(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            app = root / "apps" / "IoT"
+            app.mkdir(parents=True)
+            (app / "rhamaa-app.json").write_text(
+                json.dumps(self._manifest("0.5")), encoding="utf-8"
+            )
+            (app / "old.py").write_text("old = True\n", encoding="utf-8")
+            (root / ".gitignore").write_text(".env\n", encoding="utf-8")
+
+            archive = root / "iot.zip"
+            with zipfile.ZipFile(archive, "w") as package:
+                package.writestr(
+                    "iot-main/rhamaa-app.json", json.dumps(self._manifest("0.7"))
+                )
+                package.writestr("iot-main/new.py", "new = True\n")
+
+            info = {
+                "repository": "https://github.com/rhamaa/iot-apps",
+                "branch": "main",
+                "version": "0.7",
+                "install_name": "IoT",
+            }
+            with patch(
+                "rhamaa.app_versioning.download_github_repo",
+                return_value=str(archive),
+            ), patch.object(
+                ManifestApplier, "apply_all", return_value=ApplyResult(success=True)
+            ):
+                result = update_registered_app(
+                    registry_key="iot", app_info=info, project_path=root
+                )
+
+            self.assertTrue(result.success, result.errors)
+            self.assertTrue(result.updated)
+            self.assertEqual(result.old_version, "0.5")
+            self.assertEqual(result.new_version, "0.7")
+            self.assertTrue((app / "new.py").exists())
+            self.assertFalse((app / "old.py").exists())
+            self.assertTrue((result.backup_path / "old.py").exists())
+            state = json.loads((root / ".rhamaa" / "apps.json").read_text())
+            self.assertEqual(state["apps"]["iot"]["version"], "0.7")
+            self.assertIn(
+                "/.rhamaa/backups/", (root / ".gitignore").read_text()
+            )
+
+    def test_registry_and_downloaded_versions_must_match(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            app = root / "apps" / "IoT"
+            app.mkdir(parents=True)
+            (app / "rhamaa-app.json").write_text(
+                json.dumps(self._manifest("0.5")), encoding="utf-8"
+            )
+            archive = root / "iot.zip"
+            with zipfile.ZipFile(archive, "w") as package:
+                package.writestr(
+                    "iot-main/rhamaa-app.json", json.dumps(self._manifest("0.6"))
+                )
+            info = {
+                "repository": "https://github.com/rhamaa/iot-apps",
+                "branch": "main",
+                "version": "0.7",
+                "install_name": "IoT",
+            }
+            with patch(
+                "rhamaa.app_versioning.download_github_repo",
+                return_value=str(archive),
+            ):
+                result = update_registered_app(
+                    registry_key="iot", app_info=info, project_path=root
+                )
+            self.assertFalse(result.success)
+            self.assertTrue(any("Registry says 0.7" in e for e in result.errors))
+            self.assertEqual(
+                json.loads((app / "rhamaa-app.json").read_text())["version"], "0.5"
+            )
 
 
 if __name__ == "__main__":

@@ -72,6 +72,9 @@ your-app-repo/
 | `description` | string | Yes | Brief description |
 | `author` | string | No | Author or organization |
 
+Versions use numeric `MAJOR.MINOR` or `MAJOR.MINOR.PATCH`. Registered apps expose
+only registry current version; CLI does not provide version selection.
+
 ### Django Configuration (`django`)
 
 #### Installed Apps

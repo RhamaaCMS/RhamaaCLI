@@ -136,6 +136,27 @@ rhamaa cms startapp --list
 
 ---
 
+### `rhamaa cms apps`
+
+Inspect and update registered apps using current-only releases.
+
+```bash
+rhamaa cms apps status
+rhamaa cms apps update iot
+rhamaa cms apps update --all
+rhamaa cms apps update iot --dry-run
+rhamaa cms apps update iot --reinstall
+```
+
+`update` intentionally has no version or branch option. Registry `version` and
+downloaded `rhamaa-app.json` must match. Code backup is always created in
+`.rhamaa/backups/apps/<package>/` before full replacement.
+
+If migrations fail, CLI keeps new code and backup because database changes may
+already be partially applied. Review migration state before manual restoration.
+
+---
+
 ### `rhamaa cms build-template`
 
 Convert a RhamaaCMS project back into a reusable template.

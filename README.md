@@ -29,6 +29,12 @@ rhamaa cms startapp myiot --prebuild https://github.com/owner/repo --branch main
 
 # List available apps
 rhamaa cms startapp --list
+
+# Show installed/current app versions
+rhamaa cms apps status
+
+# Update IoT to the only current registry version
+rhamaa cms apps update iot
 ```
 
 ## 🎯 CMS-Focused Commands
@@ -69,6 +75,25 @@ This enables **plug-and-play installation**:
 rhamaa cms startapp myusers --prebuild users
 # Automatically configures everything from the manifest
 ```
+
+### Registered app updates
+
+RhamaaCLI uses current-only app releases. Registry owns current version; users
+cannot select an older/newer version or override source branch.
+
+```bash
+rhamaa cms apps status
+rhamaa cms apps update iot
+rhamaa cms apps update --all
+rhamaa cms apps update iot --dry-run
+rhamaa cms apps update iot --reinstall
+```
+
+Update workflow: validate downloaded manifest, require registry/source version
+match, backup old app under `.rhamaa/backups/apps/`, replace full app code,
+reapply manifest configuration, then run shipped migrations. Successful installs
+are tracked in `.rhamaa/apps.json`.
+Commit `.rhamaa/apps.json`; ignore local `.rhamaa/backups/`.
 
 ### `rhamaa cms build-template [source]`
 Konversi proyek RhamaaCMS hasil eksplorasi kembali menjadi template siap pakai:
