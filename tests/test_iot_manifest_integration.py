@@ -106,6 +106,32 @@ class IoTManifestIntegrationTests(unittest.TestCase):
         self.assertIn("influx", registry)
         self.assertIn("whitelabeling", registry)
 
+    def test_local_registered_apps_match_registry_identity_and_version(self):
+        ecosystem = Path(__file__).parents[2]
+        registry_path = (
+            Path(__file__).parents[1]
+            / "rhamaa"
+            / "templates"
+            / "cms"
+            / "app_list.json"
+        )
+        registry = json.loads(registry_path.read_text(encoding="utf-8"))
+        repo_names = {
+            "iot": "IoT",
+            "users": "user-apps",
+            "influx": "influx",
+            "whitelabeling": "whitelabeling",
+        }
+        for key, repo_name in repo_names.items():
+            path = ecosystem / "Apps" / repo_name / "rhamaa-app.json"
+            if not path.exists():
+                self.skipTest("Ecosystem sibling app repositories are unavailable")
+            manifest, errors = ManifestParser.load(path)
+            self.assertEqual(errors, [], key)
+            self.assertEqual(manifest.version, registry[key]["version"])
+            self.assertEqual(manifest.package_name, registry[key]["install_name"])
+            self.assertEqual(manifest.slug.lower(), key.lower())
+
     def test_incompatible_template_is_rejected_before_changes(self):
         manifest_path = Path(__file__).parents[2] / "Apps" / "IoT" / "rhamaa-app.json"
         if not manifest_path.exists():
