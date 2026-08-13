@@ -5,6 +5,8 @@ Orchestrates the application of AppManifest configurations to a Django project.
 
 import subprocess
 import sys
+import re
+import secrets
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple, Any
@@ -195,7 +197,16 @@ class ManifestApplier:
         
         # 5. Set custom settings
         for key, value in self.manifest.django.settings.items():
-            setting_value = value.get("default") if isinstance(value, dict) and "default" in value else value
+            if isinstance(value, dict) and value.get("generate") == "unique_slug":
+                # A generated deployment identity must remain stable across
+                # reinstall/update operations. Never rotate an existing value.
+                if re.search(rf"^{re.escape(key)}\s*=", parser.content, re.MULTILINE):
+                    continue
+                prefix = re.sub(r"[^a-z0-9_-]", "-", str(value.get("prefix", "app")).lower()).strip("-_")
+                prefix = prefix or "app"
+                setting_value = f"{prefix}-{secrets.token_hex(8)}"
+            else:
+                setting_value = value.get("default") if isinstance(value, dict) and "default" in value else value
             if parser.set_setting(key, setting_value):
                 modified = True
                 self.changes.append(f"  + Set {key} = {setting_value}")

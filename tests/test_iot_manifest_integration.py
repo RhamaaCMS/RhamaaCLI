@@ -1,4 +1,5 @@
 import json
+import re
 import sys
 import tempfile
 import types
@@ -91,18 +92,43 @@ class IoTManifestIntegrationTests(unittest.TestCase):
             urls = (root / "demo" / "urls.py").read_text(encoding="utf-8")
             environment = (root / ".env.example").read_text(encoding="utf-8")
             self.assertIn("apps.IoT", settings)
+            match = re.search(r"^IOT_APP_ID = '([^']+)'$", settings, re.MULTILINE)
+            self.assertIsNotNone(match)
+            self.assertRegex(match.group(1), r"^iot-[a-f0-9]{16}$")
             self.assertIn("apps.IoT.urls", urls)
             self.assertIn("apps.IoT.ota_urls", urls)
             self.assertIn("IOT_OTA_PUBLIC_BASE=", environment)
             self.assertIn("IOT_PROVISION_RATE_LIMIT=10", environment)
             self.assertEqual(environment.count("MQTT_BROKER_HOST="), 1)
 
+    def test_generated_iot_app_id_is_preserved_on_reapply(self):
+        manifest_path = Path(__file__).parents[2] / "Apps" / "IoT" / "rhamaa-app.json"
+        if not manifest_path.exists():
+            self.skipTest("Ecosystem sibling Apps/IoT is unavailable")
+        manifest, errors = ManifestParser.load(manifest_path)
+        self.assertEqual(errors, [])
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self._project(root)
+            settings_path = root / "demo" / "settings" / "base.py"
+            settings_path.write_text(
+                settings_path.read_text(encoding="utf-8")
+                + "IOT_APP_ID = 'iot-existing123'\n",
+                encoding="utf-8",
+            )
+            applier = ManifestApplier(manifest, root, "IoT")
+            applier._apply_settings(dry_run=False, backup=False)
+            settings = settings_path.read_text(encoding="utf-8")
+            self.assertIn("IOT_APP_ID = 'iot-existing123'", settings)
+            self.assertEqual(settings.count("IOT_APP_ID"), 1)
+
     def test_registry_uses_fixed_package_name(self):
         registry_path = Path(__file__).parents[1] / "rhamaa" / "templates" / "cms" / "app_list.json"
         registry = json.loads(registry_path.read_text(encoding="utf-8"))
         self.assertNotIn("mqtt", registry)
         self.assertEqual(registry["iot"]["install_name"], "IoT")
-        self.assertEqual(registry["iot"]["version"], "2.1.0")
+        self.assertEqual(registry["iot"]["version"], "2.3.0")
         self.assertIn("influx", registry)
         self.assertIn("whitelabeling", registry)
 
