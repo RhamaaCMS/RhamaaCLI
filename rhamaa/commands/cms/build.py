@@ -11,6 +11,13 @@ from rich.panel import Panel
 
 console = Console()
 
+# Matches: SECRET_KEY = "..." or SECRET_KEY = '...'
+# Handles optional whitespace around '=' and both quote styles.
+SECRET_KEY_PATTERN = re.compile(
+    r"""(SECRET_KEY\s*=\s*)(['"])[^'"]*\2""",
+    re.MULTILINE,
+)
+
 IGNORE_PATTERNS = [
     ".git",
     ".hg",
@@ -81,6 +88,7 @@ def build_template(source, slug, output, wrap_templates):
 
         rename_project_package(project_copy, slug)
         replace_slug_tokens(project_copy, slug)
+        replace_secret_key(project_copy)
 
         if wrap_templates:
             wrap_project_templates(project_copy)
@@ -176,6 +184,28 @@ def wrap_html_file(path: Path) -> None:
 
     wrapped = "{% verbatim %}\n" + text + "\n{% endverbatim %}\n"
     path.write_text(wrapped, encoding="utf-8")
+
+
+def replace_secret_key(project_copy: Path) -> None:
+    """Replace any hardcoded SECRET_KEY value with the {{ secret_key }} template token.
+
+    When a project is generated via ``wagtail start``, the template placeholder
+    ``{{ secret_key }}`` is replaced with an actual generated key.  This function
+    reverses that substitution so the output can be redistributed as a template.
+    """
+    for path in project_copy.rglob("*.py"):
+        if not path.is_file():
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            continue
+        if "SECRET_KEY" not in text:
+            continue
+        updated = SECRET_KEY_PATTERN.sub(r'\1"{{ secret_key }}"', text)
+        if updated != text:
+            path.write_text(updated, encoding="utf-8")
+            console.print(f"\u2192 Replaced SECRET_KEY in {path.relative_to(project_copy)}")
 
 
 def create_zip(source_dir: Path, zip_path: Path) -> None:

@@ -1,0 +1,15 @@
+{
+  "minimal": {
+    "name": "Minimal Django App",
+    "description": "Standard Django app using django-admin startapp command",
+    "type": "builtin",
+    "method": "django-admin"
+  },
+  "wagtail": {
+    "name": "Wagtail App",
+    "description": "Wagtail app dengan blocks, models, dan templates",
+    "type": "builtin",
+    "method": "tpl",
+    "template_path": "APPS_TEMPLATES/wagtail"
+  }
+}

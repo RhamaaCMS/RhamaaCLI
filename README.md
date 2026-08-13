@@ -22,10 +22,19 @@ cd MyProject
 rhamaa cms startapp blog
 
 # Install prebuilt app
-rhamaa cms startapp iot --prebuild mqtt
+rhamaa cms startapp IoT --prebuild iot
+
+# Install prebuilt app from a custom GitHub repository
+rhamaa cms startapp myiot --prebuild https://github.com/owner/repo --branch main
 
 # List available apps
 rhamaa cms startapp --list
+
+# Show installed/current app versions
+rhamaa cms apps status
+
+# Update IoT to the only current registry version
+rhamaa cms apps update iot
 ```
 
 ## 🎯 CMS-Focused Commands
@@ -37,12 +46,54 @@ Creates new Wagtail project using RhamaaCMS template.
 - `--local-dev` pakai template di `../RhamaaCMS`
 - `--list` tampilkan katalog template registry
 
-### `rhamaa cms startapp <name>`
-Creates Django apps or installs prebuilt apps:
-- `--type minimal` - Standard Django app (default)
-- `--type wagtail` - Wagtail app with models/templates
-- `--prebuild <key>` - Install from registry
+- `--prebuild <key|url>` - Install from registry or GitHub URL
+- `--branch <branch>` - GitHub branch to download for custom repo installs
+- `--dry-run` - Preview changes without applying
+- `--backup/--no-backup` - Create backup files (default: false)
+- `--skip-config` - Skip auto-configuration
 - `--list` - Show available prebuilt apps
+
+**Auto-Configuration Features:**
+When creating apps, RhamaaCLI automatically:
+1. Adds app to `INSTALLED_APPS` in settings
+2. Wires up URLs in `urls.py`
+3. Creates app `urls.py` if not exists
+4. Creates `.bak` backup files before modification (use `--backup`)
+
+**App Manifest System (rhamaa-app.json):**
+Prebuilt apps can include a `rhamaa-app.json` manifest that defines:
+- INSTALLED_APPS and dependencies
+- Middleware configuration with positioning
+- Template directories and context processors
+- Authentication backends
+- Custom Django settings
+- URL patterns with namespaces
+- Post-install tasks (migrations, fixtures, management commands)
+
+This enables **plug-and-play installation**:
+```bash
+rhamaa cms startapp myusers --prebuild users
+# Automatically configures everything from the manifest
+```
+
+### Registered app updates
+
+RhamaaCLI uses current-only app releases. Registry owns current version; users
+cannot select an older/newer version or override source branch.
+
+```bash
+rhamaa cms apps status
+rhamaa cms apps update iot
+rhamaa cms apps update --all
+rhamaa cms apps update iot --dry-run
+rhamaa cms apps update iot --reinstall
+```
+
+Update workflow: validate downloaded manifest, require registry/source version
+match, backup old app under `.rhamaa/backups/apps/`, replace full app code,
+reapply manifest configuration, then run shipped migrations. Successful installs
+are tracked in `.rhamaa/apps.json`.
+Commit `.rhamaa/apps.json`; ignore local `.rhamaa/backups/`.
 
 ### `rhamaa cms build-template [source]`
 Konversi proyek RhamaaCMS hasil eksplorasi kembali menjadi template siap pakai:
@@ -58,11 +109,20 @@ Development and production server management:
 - `rhamaa cms check` - Run system checks
 - `rhamaa cms status` - Show project status
 
+## 📦 Available Project Templates
+
+| Key | Name | Description |
+|-----|------|-------------|
+| `base` | RhamaaCMS Base | Stable production-ready template |
+| `dev` | RhamaaCMS Dev | Development branch with latest features |
+| `inertia-react` | RhamaaCMS Inertia + React | Wagtail with Inertia.js and React SPA |
+| `iot` | RhamaaCMS IoT | IoT-focused with MQTT integration |
+
 ## 📦 Available Prebuilt Apps
 
 | Key | Name | Category |
 |-----|------|----------|
-| `mqtt` | MQTT Apps | IoT |
+| `iot` | Rhamaa IoT (`apps.IoT`) | IoT |
 | `users` | User Management | Authentication |
 | `articles` | Article System | Content |
 
@@ -71,28 +131,30 @@ Development and production server management:
 ```bash
 # Blog project
 rhamaa cms start MyBlog
-cd MyBlog
 rhamaa cms startapp articles --prebuild articles
 
-# IoT dashboard
-rhamaa cms start IoTDash
-cd IoTDash
-rhamaa cms startapp devices --prebuild mqtt
+# IoT dashboard with IoT template
+rhamaa cms start IoTDash --template iot
+rhamaa cms startapp IoT --prebuild iot
 
-# Educational platform
-rhamaa cms start EduSite
-cd EduSite
-rhamaa cms startapp courses --prebuild lms
+# Inertia + React SPA project
+rhamaa cms start MySPA --template inertia-react
+rhamaa cms startapp dashboard
 
-# Bootstrapping from custom template sources
+# Custom template sources
 rhamaa cms start MyLocal --template-file ./dist/rhamaacms-template.zip
 rhamaa cms start Latest --template-url https://example.com/custom-template.zip
 
 # Build template kembali dari proyek lokal
 rhamaa cms build-template .
+
+# List available options
+rhamaa cms start --list
 ```
 
-## 🔧 After Installing Apps
+## 🔧 After Installing Apps (Manual Steps - Auto-Config Disabled)
+
+If you use `--skip-config`, manually add:
 
 1. Add to `INSTALLED_APPS`:
 ```python
@@ -102,7 +164,15 @@ INSTALLED_APPS = [
 ]
 ```
 
-2. Run migrations:
+2. Add to project's `urls.py`:
+```python
+urlpatterns = [
+    # ... existing patterns
+    path('your_app/', include('apps.your_app_name.urls')),
+]
+```
+
+3. Run migrations:
 ```bash
 python manage.py makemigrations
 python manage.py migrate
@@ -113,8 +183,14 @@ python manage.py migrate
 - **Rich Terminal UI** - Beautiful ASCII art and progress bars
 - **Auto Directory Structure** - Apps created in `apps/` folder
 - **GitHub Integration** - Downloads apps from repositories
+- **Auto-Configuration** - Automatically adds apps to settings and URLs
+- **App Manifest System** - Plug-and-play app installation with full configuration
+- **Template System** - ZIP-based templates for projects and apps
+- **Dry-Run Mode** - Preview changes without applying
+- **Backup Safety** - Creates `.bak` files before modifications (use `--backup`)
+- **Conflict Detection** - Detects setting/URL conflicts before installation
+- **Dependency Resolution** - Auto-installs app dependencies in correct order
 - **Force Install** - Overwrite existing apps with `--force`
-- **Project Detection** - Validates Wagtail project structure
 
 ## 📋 Requirements
 

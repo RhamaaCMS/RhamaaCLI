@@ -8,9 +8,57 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
 from rich import box
-from rhamaa.utils import download_github_repo, extract_repo_to_apps, check_wagtail_project
+from rhamaa.utils import download_github_repo, extract_repo_to_apps, is_github_repo_url
+from rhamaa.config_utils import auto_configure_app
+from rhamaa.manifest_applier import install_app_with_manifest
+from rhamaa.manifest import ManifestParser
 
 console = Console()
+
+def create_standard_manifest(app_dir: Path, app_name: str, app_type: str) -> Path:
+    """
+    Create a default `rhamaa-app.json` for standard apps.
+
+    This keeps standard apps aligned with the prebuilt/manifest convention so they
+    can be promoted to prebuilt apps later without inventing a new format.
+    """
+    manifest_path = app_dir / "rhamaa-app.json"
+
+    # Keep placeholders so the manifest can be reused as a prebuilt template.
+    manifest = {
+        "schema_version": "1.0.0",
+        "name": app_name.replace("_", " ").title(),
+        "slug": "{app_name}",
+        "version": "1.0.0",
+        "description": f"RhamaaCMS standard {app_type} app scaffold",
+        "author": "RhamaaCMS",
+        "django": {
+            "installed_apps": ["apps.{app_name}"],
+            "middleware": [],
+            "templates": None,
+            "auth_backends": [],
+            "settings": {},
+        },
+        "urls": [
+            {
+                "path": "{app_name}/",
+                "include": "apps.{app_name}.urls",
+                "namespace": "{app_name}",
+                "name": "{app_name}",
+            }
+        ],
+        "dependencies": {"apps": [], "packages": [], "optional_apps": []},
+        "staticfiles": None,
+        "post_install": {
+            "migrations": True,
+            "fixtures": [],
+            "management_commands": [],
+            "messages": [],
+        },
+    }
+
+    manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    return manifest_path
 
 def load_app_registry():
     """Load app registry from JSON file."""
@@ -36,12 +84,23 @@ def is_app_available(app_name):
 
 @click.command()
 @click.argument('app_name', required=False)
-@click.option('--type', 'app_type', type=click.Choice(['minimal', 'wagtail']), default='minimal', show_default=True, help='App template type')
-@click.option('--prebuild', type=str, default=None, help='Install a prebuilt app from registry (mqtt, users, articles)')
+@click.option(
+    '--type',
+    'app_type',
+    type=click.Choice(['minimal', 'wagtail']),
+    default='minimal',
+    show_default=True,
+    help='App type for standard app scaffolding',
+)
+@click.option('--prebuild', type=str, default=None, help='Install a prebuilt app from registry or GitHub repo URL')
+@click.option('--dry-run', is_flag=True, help='Preview changes without applying')
+@click.option('--backup/--no-backup', default=False, help='Create backup of modified files (default: disabled)')
+@click.option('--skip-config', is_flag=True, help='Skip auto-configuration')
+@click.option('--branch', type=str, default=None, help='Override repository branch (custom repos default to main)')
 @click.option('--list', 'list_apps', is_flag=True, help='List available prebuilt apps')
 @click.option('--force', '-f', is_flag=True, help='Overwrite existing app')
-def startapp(app_name, app_type, prebuild, list_apps, force):
-    """Create a new Django app or install prebuilt app."""
+def startapp(app_name, app_type, prebuild, dry_run, backup, skip_config, branch, list_apps, force):
+    """Create a new Django app (standard) or install a prebuilt app."""
     
     # Show available apps
     if list_apps:
@@ -59,11 +118,11 @@ def startapp(app_name, app_type, prebuild, list_apps, force):
     
     # Handle prebuilt app installation
     if prebuild:
-        install_prebuilt_app(app_name, prebuild, force)
+        install_prebuilt_app(app_name, prebuild, force, dry_run, backup, skip_config, branch)
         return
-    
-    # Create standard Django app
-    create_standard_app(app_name, app_type, force)
+
+    # Create standard Django app (builtin scaffolding only)
+    create_standard_app(app_name, app_type, force, dry_run, backup, skip_config)
 
 def show_available_apps():
     """Display available prebuilt apps."""
@@ -94,20 +153,36 @@ def show_available_apps():
         table = Table(show_header=True, header_style="bold blue", box=box.SIMPLE)
         table.add_column("Key", style="bold cyan", width=12)
         table.add_column("Name", style="white", width=20)
+        table.add_column("Current", style="green", width=10)
         table.add_column("Description", style="dim", min_width=30)
         
         for key, info in apps:
-            table.add_row(key, info['name'], info['description'])
+            table.add_row(key, info['name'], info.get('version', '?'), info['description'])
         
         console.print(table)
     
     console.print(f"\n[dim]Total: {len(registry)} apps available[/dim]")
 
-def install_prebuilt_app(app_name, prebuild_key, force):
-    """Install a prebuilt app from registry."""
-    if not is_app_available(prebuild_key):
+def install_prebuilt_app(app_name, prebuild_key, force, dry_run=False, backup=False, skip_config=False, branch=None):
+    """Install a prebuilt app from registry using manifest system."""
+    app_dir = Path("apps") / app_name
+    custom_repo = is_github_repo_url(prebuild_key)
+    app_info = get_app_info(prebuild_key)
+
+    if not app_info and not custom_repo:
         console.print(f"[red]Error:[/red] Prebuilt app '{prebuild_key}' not found")
-        console.print("Use [cyan]rhamaa cms startapp --list[/cyan] to see available apps")
+        console.print("Use [cyan]rhamaa cms startapp --list[/cyan] to see available apps or pass a GitHub repo URL")
+        return
+
+    if custom_repo:
+        app_info = {"repository": prebuild_key, "name": app_name}
+
+    required_name = app_info.get("install_name")
+    if required_name and app_name != required_name:
+        console.print(
+            f"[red]Error:[/red] '{prebuild_key}' must be installed as "
+            f"[bold]{required_name}[/bold] (case-sensitive)."
+        )
         return
     
     app_dir = Path("apps") / app_name
@@ -115,44 +190,72 @@ def install_prebuilt_app(app_name, prebuild_key, force):
         console.print(f"[yellow]Warning:[/yellow] App '{app_name}' already exists. Use --force to overwrite")
         return
     
-    app_info = get_app_info(prebuild_key)
+    # Use new manifest-based installation
+    if not skip_config:
+        result = install_app_with_manifest(
+            app_name=app_name,
+            prebuild_key=prebuild_key,
+            force=force,
+            dry_run=dry_run,
+            backup=backup,
+            branch=branch
+        )
+        if not result.success:
+            detail = "; ".join(result.errors) or "Unknown installation error"
+            raise click.ClickException(detail)
+        return
+    
+    # Fallback: Basic installation without manifest
     console.print(f"[cyan]Installing {app_info['name']} as '{app_name}'...[/cyan]")
+    
+    if dry_run:
+        console.print(f"[dry-run] Would download and install to 'apps/{app_name}'")
+        console.print(f"[dry-run] Would auto-configure in project settings")
+        return
     
     with Progress(
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
         BarColumn(),
         TaskProgressColumn(),
-        console=console
+        console=console,
     ) as progress:
-        
         download_task = progress.add_task("Downloading...", total=100)
         zip_path = download_github_repo(
-            app_info['repository'], 
-            app_info['branch'], 
-            progress, 
-            download_task
+            app_info["repository"],
+            branch or app_info.get("branch") or "main",
+            progress,
+            download_task,
         )
-        
+
         if not zip_path:
             console.print("[red]Failed to download repository[/red]")
             return
-        
+
         extract_task = progress.add_task("Extracting...", total=100)
         success = extract_repo_to_apps(zip_path, app_name, progress, extract_task)
-        
-        if success:
-            console.print(f"[green]✓[/green] Successfully installed 'apps/{app_name}'")
-            console.print(f"[dim]Next steps:[/dim]")
-            console.print(f"1. Add 'apps.{app_name}' to INSTALLED_APPS")
-            console.print(f"2. Run: python manage.py makemigrations && python manage.py migrate")
-        else:
-            console.print("[red]Failed to install app[/red]")
 
-def create_standard_app(app_name, app_type, force):
+        if success:
+            if custom_repo:
+                manifest_path = ManifestParser.find_manifest(app_dir)
+                if not manifest_path:
+                    console.print("[red]Error:[/red] Missing rhamaa-app.json manifest in repository. Custom GitHub app installs require a manifest file.")
+                    return
+            console.print(f"[green]✓[/green] Successfully installed 'apps/{app_name}'")
+            console.print("[dim]Note: Install without --skip-config to use automatic manifest-based configuration[/dim]")
+
+def create_standard_app(app_name, app_type, force, dry_run=False, backup=True, skip_config=False):
     """Create a standard Django app in apps/ directory."""
     # Ensure apps directory exists
     apps_dir = Path("apps")
+    
+    if dry_run:
+        console.print(f"[dry-run] Would create 'apps/{app_name}' using template '{app_type}'")
+        console.print("[dry-run] Would create 'apps/{app_name}/rhamaa-app.json' manifest")
+        if not skip_config:
+            console.print(f"[dry-run] Would auto-configure in project settings")
+        return
+    
     apps_dir.mkdir(exist_ok=True)
     
     app_dir = apps_dir / app_name
@@ -192,6 +295,21 @@ def create_standard_app(app_name, app_type, force):
         console.print(f"[cyan]Creating Wagtail app: apps/{app_name}[/cyan]")
         create_app_structure(app_dir, app_name, app_type)
         console.print(f"[green]✓[/green] Created 'apps/{app_name}' app with Wagtail structure")
+
+    # Create RhamaaCMS manifest (standardization with prebuilt apps)
+    if app_dir.exists():
+        try:
+            manifest_path = create_standard_manifest(app_dir, app_name, app_type)
+            console.print(f"[green]✓[/green] Created manifest: apps/{app_name}/{manifest_path.name}")
+        except Exception as e:
+            console.print(f"[yellow]Warning:[/yellow] Failed to create rhamaa-app.json: {e}")
+    
+    # Auto-configuration
+    if not skip_config and app_dir.exists():
+        console.print("\n[bold cyan]Auto-configuring app...[/bold cyan]")
+        changes = auto_configure_app(app_name, dry_run=False, backup=backup)
+        for change in changes:
+            console.print(f"  • {change}")
 
 # Template functions (copied from original startapp.py)
 def _render_template(content: str, context: dict) -> str:

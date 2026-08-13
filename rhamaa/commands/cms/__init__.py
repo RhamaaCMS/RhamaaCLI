@@ -6,6 +6,7 @@ from .database import migrate, makemigrations
 from .management import check, test, collectstatic, createsuperuser, shell, update_index
 from .info import status, info
 from .build import build_template
+from .apps import apps
 
 @click.group()
 def cms():
@@ -27,3 +28,4 @@ cms.add_command(update_index)
 cms.add_command(status)
 cms.add_command(info)
 cms.add_command(build_template)
+cms.add_command(apps)
