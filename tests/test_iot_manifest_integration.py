@@ -128,7 +128,7 @@ class IoTManifestIntegrationTests(unittest.TestCase):
         registry = json.loads(registry_path.read_text(encoding="utf-8"))
         self.assertNotIn("mqtt", registry)
         self.assertEqual(registry["iot"]["install_name"], "IoT")
-        self.assertEqual(registry["iot"]["version"], "2.3.0")
+        self.assertEqual(registry["iot"]["version"], "2.3.1")
         self.assertIn("influx", registry)
         self.assertIn("whitelabeling", registry)
 

@@ -4,7 +4,7 @@
     "description": "Connected-device domain extension for RhamaaCMS base-iot",
     "repository": "https://github.com/rhamaa/iot-apps",
     "branch": "main",
-    "version": "2.3.0",
+    "version": "2.3.1",
     "install_name": "IoT",
     "category": "IoT"
   },
